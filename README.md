@@ -52,11 +52,18 @@ cd frontend/employee-manager-client && npm install && npm start   # UI on http:/
 
 Health check (includes database connectivity): `GET http://localhost:5062/api/health`
 
+## Data model
+
+`Employee` (`employees` table): first/last name, email (unique), job title, hire date, and an optional
+`ManagerId` pointing to another employee. Top-level managers have no manager; an employee can't be their
+own manager, and a manager with direct reports can't be deleted until they are reassigned.
+Database names use snake_case.
+
 ## EF Core migrations
 
 ```bash
-dotnet tool install --global dotnet-ef
-dotnet ef migrations add InitialCreate \
+dotnet tool restore   # installs the repo-pinned dotnet-ef
+dotnet ef migrations add <MigrationName> \
   --project backend/src/EmployeeManager.Infrastructure \
   --startup-project backend/src/EmployeeManager.Api \
   --output-dir Persistence/Migrations

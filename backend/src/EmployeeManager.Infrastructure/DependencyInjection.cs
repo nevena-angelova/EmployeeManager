@@ -11,7 +11,8 @@ public static class DependencyInjection
     {
         services.AddDbContext<EmployeeManagerDbContext>(options =>
             options.UseNpgsql(connectionString, npgsql =>
-                npgsql.MigrationsAssembly(typeof(EmployeeManagerDbContext).Assembly.FullName)));
+                    npgsql.MigrationsAssembly(typeof(EmployeeManagerDbContext).Assembly.FullName))
+                .UseSnakeCaseNamingConvention());
 
         services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<EmployeeManagerDbContext>());
 
