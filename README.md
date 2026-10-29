@@ -6,8 +6,8 @@ Employee management system.
 |-----------|------------------------------------|
 | Back-end  | ASP.NET Core Web API (.NET 10)     |
 | ORM       | Entity Framework Core 10 (Npgsql)  |
-| Database  | PostgreSQL 17                      |
-| Front-end | Angular 20                         |
+| Database  | PostgreSQL 18                      |
+| Front-end | Angular 22 (zoneless, Vitest)      |
 
 ## Structure
 
@@ -31,10 +31,21 @@ Dependencies point inward: `Api → Application, Infrastructure`, `Infrastructur
 
 ## Getting started
 
-Prerequisites: .NET 10 SDK, Node.js 20.19+ (or 22.12+), Docker (or a local PostgreSQL).
+Prerequisites: .NET 10 SDK, Node.js 22.22+ / 24.15+ / 26+, PostgreSQL 18 (local or via Docker).
+
+### Database
+
+Local PostgreSQL — create the app role and database once:
 
 ```bash
-docker compose up -d                                  # start PostgreSQL
+sudo -u postgres psql -c "CREATE ROLE employee_manager LOGIN CREATEDB PASSWORD 'employee_manager';" -c "CREATE DATABASE employee_manager OWNER employee_manager;"
+```
+
+Or with Docker: `docker compose up -d` (same credentials).
+
+### Run
+
+```bash
 dotnet run --project backend/src/EmployeeManager.Api  # API on http://localhost:5062
 cd frontend/employee-manager-client && npm install && npm start   # UI on http://localhost:4200
 ```
