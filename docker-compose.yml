@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: employee-manager-db
+    environment:
+      POSTGRES_DB: employee_manager
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+volumes:
+  postgres-data:
