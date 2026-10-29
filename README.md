@@ -50,7 +50,7 @@ dotnet run --project backend/src/EmployeeManager.Api  # API on http://localhost:
 cd frontend/employee-manager-client && npm install && npm start   # UI on http://localhost:4200
 ```
 
-Health check: `GET http://localhost:5062/api/health`
+Health check (includes database connectivity): `GET http://localhost:5062/api/health`
 
 ## EF Core migrations
 

@@ -1,5 +1,6 @@
 using EmployeeManager.Application;
 using EmployeeManager.Infrastructure;
+using EmployeeManager.Infrastructure.Persistence;
 
 const string ClientCorsPolicy = "Client";
 
@@ -13,6 +14,8 @@ builder.Services.AddInfrastructure(connectionString);
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<EmployeeManagerDbContext>();
 
 builder.Services.AddCors(options =>
     options.AddPolicy(ClientCorsPolicy, policy =>
@@ -32,5 +35,6 @@ app.UseCors(ClientCorsPolicy);
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHealthChecks("/api/health");
 
 app.Run();
