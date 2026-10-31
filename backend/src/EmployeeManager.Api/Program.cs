@@ -1,6 +1,7 @@
 using EmployeeManager.Application;
 using EmployeeManager.Infrastructure;
 using EmployeeManager.Infrastructure.Persistence;
+using EmployeeManager.Infrastructure.Persistence.Seeding;
 
 const string ClientCorsPolicy = "Client";
 
@@ -28,6 +29,9 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+
+    using var scope = app.Services.CreateScope();
+    await DevelopmentDataSeeder.SeedAsync(scope.ServiceProvider.GetRequiredService<EmployeeManagerDbContext>());
 }
 
 app.UseHttpsRedirection();
