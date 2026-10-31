@@ -89,7 +89,8 @@ Conventions:
 - Use signals, `input()`/`computed()`, the `@if`/`@for` control flow, and `rxResource` for loading data.
 - Feature pages are lazy-loaded with `loadComponent` in `app.routes.ts`.
 - Specs sit next to their files. The app is zoneless, so specs use `await fixture.whenStable()` and `componentRef.setInput()`. Use `provideHttpClientTesting()` for services, and a stubbed service for pages.
-- Colours are CSS custom properties (`--color-*`, `--shadow-card`) defined in `styles.scss`, with a `prefers-color-scheme: dark` variant. Use those tokens instead of hard-coded colours.
+- Colours are CSS custom properties (`--color-*`, `--shadow-card`) defined in `styles.scss`. Use those tokens instead of hard-coded colours.
+- The app is light-only (`color-scheme: light`) and deliberately ignores the system dark mode.
 
 Features:
 - `features/org-chart/` (route `/org-chart`, which is also the default route) draws the org chart top-down.
