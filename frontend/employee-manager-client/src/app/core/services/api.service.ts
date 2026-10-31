@@ -9,7 +9,7 @@ export class ApiService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = environment.apiUrl;
 
-  get<T>(path: string): Observable<T> {
-    return this.http.get<T>(`${this.baseUrl}/${path}`);
+  get<T>(path: string, params?: Record<string, string>): Observable<T> {
+    return this.http.get<T>(`${this.baseUrl}/${path}`, { params });
   }
 }
