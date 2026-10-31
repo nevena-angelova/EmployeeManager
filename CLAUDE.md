@@ -97,3 +97,7 @@ Features:
   - `OrgChart` is the page. It handles the loading, error-with-retry and empty states, and starts the horizontally scrolling chart centred on the top of the tree.
   - `OrgChartBranch` is a recursive component that renders one card plus its reports. Each card collapses or expands its team.
   - The connector lines are pure CSS, using the nested `ul`/`li` `::before`/`::after` technique.
+
+## Keeping this file current
+
+When a change adds or alters a command, convention, endpoint, feature or gotcha described here, update this file in the same change. Keep entries short, and leave out what's obvious from the code. Before ending a session, run `/update-claude-md` to catch anything missed.
