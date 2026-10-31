@@ -1,0 +1,155 @@
+// Connector lines use the classic nested-list technique: the list draws a vertical line down from the
+// parent card, each item draws its half of the horizontal bar plus a stub down to its own card.
+$gap: 24px;
+$line: 1px solid var(--color-connector);
+
+:host {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.card {
+  box-sizing: border-box;
+  width: 200px;
+  padding: 16px 12px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-card);
+  box-shadow: var(--shadow-card);
+  text-align: center;
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin: 0 auto 8px;
+  border-radius: 50%;
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.name {
+  margin: 0;
+  font-weight: 600;
+}
+
+.job-title {
+  margin: 2px 0 6px;
+  color: var(--color-muted);
+  font-size: 0.875rem;
+}
+
+.email {
+  display: block;
+  overflow: hidden;
+  color: var(--color-accent);
+  font-size: 0.8125rem;
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 10px;
+  padding: 4px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-muted);
+  font: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+}
+
+.chevron {
+  transition: transform 0.15s ease;
+
+  .collapsed & {
+    transform: rotate(-90deg);
+  }
+}
+
+.reports {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  margin: 0;
+  padding: $gap 0 0;
+  list-style: none;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    height: $gap;
+    border-left: $line;
+  }
+
+  > li {
+    position: relative;
+    padding: $gap 8px 0;
+
+    &::before,
+    &::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 50%;
+      width: 50%;
+      height: $gap;
+      border-top: $line;
+    }
+
+    &::after {
+      right: auto;
+      left: 50%;
+      border-left: $line;
+    }
+
+    &:only-child {
+      padding-top: 0;
+
+      &::before,
+      &::after {
+        display: none;
+      }
+    }
+
+    &:first-child::before,
+    &:last-child::after {
+      border: 0 none;
+    }
+
+    &:first-child::after {
+      border-radius: 8px 0 0 0;
+    }
+
+    &:last-child::before {
+      border-right: $line;
+      border-radius: 0 8px 0 0;
+    }
+  }
+}

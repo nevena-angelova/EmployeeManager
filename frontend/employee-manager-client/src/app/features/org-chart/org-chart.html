@@ -1,0 +1,22 @@
+<section class="page">
+  <h2>Organisation chart</h2>
+
+  @if (orgChart.error()) {
+    <div class="status error" role="alert">
+      <p>The organisation chart couldn't be loaded.</p>
+      <button type="button" (click)="orgChart.reload()">Retry</button>
+    </div>
+  } @else if (orgChart.isLoading()) {
+    <p class="status" aria-live="polite">Loading organisation chart…</p>
+  } @else if (orgChart.value()?.length) {
+    <div class="chart-scroller" #scroller>
+      <ul class="roots">
+        @for (root of orgChart.value(); track root.id) {
+          <li><app-org-chart-branch [node]="root" /></li>
+        }
+      </ul>
+    </div>
+  } @else {
+    <p class="status">No employees yet.</p>
+  }
+</section>

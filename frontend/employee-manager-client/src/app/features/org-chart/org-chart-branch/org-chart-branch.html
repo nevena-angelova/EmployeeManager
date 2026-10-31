@@ -1,0 +1,26 @@
+<article class="card">
+  <div class="avatar" aria-hidden="true">{{ initials() }}</div>
+  <p class="name">{{ fullName() }}</p>
+  <p class="job-title">{{ node().jobTitle }}</p>
+  <a class="email" [href]="'mailto:' + node().email">{{ node().email }}</a>
+  @if (reportCount()) {
+    <button
+      type="button"
+      class="toggle"
+      [class.collapsed]="collapsed()"
+      [attr.aria-expanded]="!collapsed()"
+      (click)="toggle()"
+    >
+      <span class="chevron" aria-hidden="true">▾</span>
+      {{ reportCount() }} {{ reportCount() === 1 ? 'report' : 'reports' }}
+    </button>
+  }
+</article>
+
+@if (reportCount() && !collapsed()) {
+  <ul class="reports">
+    @for (child of node().directReports; track child.id) {
+      <li><app-org-chart-branch [node]="child" /></li>
+    }
+  </ul>
+}
