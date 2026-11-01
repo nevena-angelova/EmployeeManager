@@ -7,6 +7,16 @@
     </span>
   </a>
   @if (user(); as user) {
+    <nav class="main-nav" aria-label="Main">
+      <a routerLink="/org-chart" routerLinkActive="active" ariaCurrentWhenActive="page"
+        >Org chart</a
+      >
+      @if (isAdmin()) {
+        <a routerLink="/employees" routerLinkActive="active" ariaCurrentWhenActive="page"
+          >Employees</a
+        >
+      }
+    </nav>
     <div class="account">
       <span class="account-avatar" aria-hidden="true"
         >{{ user.firstName[0] }}{{ user.lastName[0] }}</span

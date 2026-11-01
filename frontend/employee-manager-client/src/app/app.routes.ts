@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 
+import { adminGuard } from './core/auth/admin.guard';
 import { authGuard } from './core/auth/auth.guard';
 
 export const routes: Routes = [
@@ -14,5 +15,11 @@ export const routes: Routes = [
     title: 'Organisation chart',
     canActivate: [authGuard],
     loadComponent: () => import('./features/org-chart/org-chart').then((m) => m.OrgChart),
+  },
+  {
+    path: 'employees',
+    title: 'Employees',
+    canActivate: [authGuard, adminGuard],
+    loadComponent: () => import('./features/employees/employees').then((m) => m.Employees),
   },
 ];

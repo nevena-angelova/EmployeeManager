@@ -11,6 +11,6 @@ public class RolesTests
         Assert.Equal(expected, Roles.ForEmployee(hasDirectReports));
 
     [Fact]
-    public void All_ContainsEmployeeAndManager() =>
-        Assert.Equal([Roles.Employee, Roles.Manager], Roles.All);
+    public void All_ContainsEveryRole() =>
+        Assert.Equal([Roles.Employee, Roles.Manager, Roles.Admin], Roles.All);
 }

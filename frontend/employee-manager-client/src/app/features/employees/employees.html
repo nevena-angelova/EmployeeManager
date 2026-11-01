@@ -1,0 +1,82 @@
+<section class="page">
+  <div class="page-intro">
+    <div>
+      <p class="eyebrow"><span></span> Admin</p>
+      <h2>Employees</h2>
+      <p class="description">Add people, keep their details current and set who they report to.</p>
+    </div>
+    <button type="button" class="primary" (click)="add()">Add employee</button>
+  </div>
+
+  @if (deleteError()) {
+    <p class="banner-error" role="alert">{{ deleteError() }}</p>
+  }
+
+  @if (employees.error()) {
+    <div class="status error" role="alert">
+      <p>The employees couldn't be loaded.</p>
+      <button type="button" class="primary" (click)="employees.reload()">Retry</button>
+    </div>
+  } @else if (employees.isLoading() && !employees.hasValue()) {
+    <p class="status" aria-live="polite">Loading employees…</p>
+  } @else if (employees.value()?.length) {
+    <div class="card">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Name</th>
+            <th scope="col">Job title</th>
+            <th scope="col">Email</th>
+            <th scope="col">Manager</th>
+            <th scope="col">Role</th>
+            <th scope="col"><span class="visually-hidden">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (employee of employees.value(); track employee.id) {
+            <tr>
+              <th scope="row" class="name">{{ employee.firstName }} {{ employee.lastName }}</th>
+              <td data-label="Job title">{{ employee.jobTitle }}</td>
+              <td data-label="Email" class="email">{{ employee.email }}</td>
+              <td data-label="Manager">{{ employee.managerName ?? '—' }}</td>
+              <td data-label="Role">
+                <span [class]="'role role-' + employee.role.toLowerCase()">{{
+                  employee.role
+                }}</span>
+              </td>
+              <td class="actions">
+                <button
+                  type="button"
+                  (click)="edit(employee)"
+                  [attr.aria-label]="'Edit ' + employee.firstName + ' ' + employee.lastName"
+                >
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  class="danger"
+                  (click)="delete(employee)"
+                  [disabled]="deletingId() === employee.id"
+                  [attr.aria-label]="'Delete ' + employee.firstName + ' ' + employee.lastName"
+                >
+                  {{ deletingId() === employee.id ? 'Deleting…' : 'Delete' }}
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  } @else {
+    <p class="status">No employees yet.</p>
+  }
+</section>
+
+@if (form(); as open) {
+  <app-employee-form
+    [employee]="open.employee"
+    [employees]="employees.value() ?? []"
+    (saved)="onSaved()"
+    (cancelled)="form.set(null)"
+  />
+}

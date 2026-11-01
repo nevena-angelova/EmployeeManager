@@ -84,6 +84,33 @@
   }
 }
 
+.main-nav {
+  z-index: 1;
+  display: flex;
+  gap: 4px;
+  margin-right: auto;
+  margin-left: clamp(8px, 3vw, 32px);
+
+  a {
+    padding: 6px 12px;
+    border-radius: 8px;
+    color: rgb(255 255 255 / 78%);
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-decoration: none;
+
+    &:hover {
+      background: rgb(255 255 255 / 10%);
+      color: var(--color-on-accent);
+    }
+
+    &.active {
+      background: rgb(255 255 255 / 18%);
+      color: var(--color-on-accent);
+    }
+  }
+}
+
 .account {
   z-index: 1;
   display: flex;
@@ -128,13 +155,22 @@ button {
   }
 }
 
-// Keep the header on one line on phones: the name gives way, the role and button stay.
+// On phones the name gives way and the nav drops to its own row under the brand and account.
+@media (max-width: 600px) {
+  .app-header {
+    flex-wrap: wrap;
+    padding-inline: 16px;
+  }
+
+  .main-nav {
+    order: 1;
+    width: 100%;
+    margin: 0;
+  }
+}
+
 @media (max-width: 480px) {
   .user-name {
     display: none;
-  }
-
-  .app-header {
-    padding-inline: 16px;
   }
 }

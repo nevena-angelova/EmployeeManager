@@ -1,3 +1,4 @@
+using System.Text.Json;
 using EmployeeManager.Api;
 using EmployeeManager.Application;
 using EmployeeManager.Application.Auth;
@@ -41,9 +42,12 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 // Every endpoint requires a signed-in user unless it opts out with [AllowAnonymous] / AllowAnonymous().
 builder.Services.AddAuthorizationBuilder()
     .SetFallbackPolicy(new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build())
-    .AddPolicy(AuthorizationPolicies.ManagerOnly, policy => policy.RequireRole(Roles.Manager));
+    .AddPolicy(AuthorizationPolicies.ManagerOnly, policy => policy.RequireRole(Roles.Manager))
+    .AddPolicy(AuthorizationPolicies.AdminOnly, policy => policy.RequireRole(Roles.Admin));
 
-builder.Services.AddControllers();
+// Camel-case dictionary keys too, so validation errors are keyed by the JSON property name ("email", not "Email").
+builder.Services.AddControllers()
+    .AddJsonOptions(options => options.JsonSerializerOptions.DictionaryKeyPolicy = JsonNamingPolicy.CamelCase);
 builder.Services.AddOpenApi();
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<EmployeeManagerDbContext>();

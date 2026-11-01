@@ -1,10 +1,10 @@
-import { Component, inject, signal } from '@angular/core';
-import { Router, RouterLink, RouterOutlet } from '@angular/router';
+import { Component, computed, inject, signal } from '@angular/core';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 
 import { AuthService } from './core/auth/auth.service';
 
 @Component({
-  imports: [RouterLink, RouterOutlet],
+  imports: [RouterLink, RouterLinkActive, RouterOutlet],
   selector: 'app-root',
   styleUrl: './app.scss',
   templateUrl: './app.html',
@@ -15,6 +15,7 @@ export class App {
 
   protected readonly title = signal('EmployeeManager');
   protected readonly user = this.auth.currentUser;
+  protected readonly isAdmin = computed(() => this.user()?.role === 'Admin');
 
   protected signOut(): void {
     this.auth.logout();

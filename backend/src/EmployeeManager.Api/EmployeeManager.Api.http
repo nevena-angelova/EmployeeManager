@@ -26,3 +26,60 @@ GET {{EmployeeManager.Api_HostAddress}}/api/employees/org-chart
 Authorization: Bearer {{token}}
 
 ###
+
+POST {{EmployeeManager.Api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "grace.turner@example.com",
+  "password": "Passw0rd!"
+}
+
+> {% client.global.set("adminToken", response.body.accessToken); %}
+
+###
+
+GET {{EmployeeManager.Api_HostAddress}}/api/employees
+Authorization: Bearer {{adminToken}}
+
+###
+
+POST {{EmployeeManager.Api_HostAddress}}/api/employees
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "firstName": "Nora",
+  "lastName": "Quinn",
+  "email": "nora.quinn@example.com",
+  "jobTitle": "Backend Developer",
+  "hireDate": "2026-11-02",
+  "managerId": null,
+  "role": "Employee",
+  "password": "Passw0rd!"
+}
+
+> {% client.global.set("employeeId", response.body.id); %}
+
+###
+
+PUT {{EmployeeManager.Api_HostAddress}}/api/employees/{{employeeId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "firstName": "Nora",
+  "lastName": "Quinn",
+  "email": "nora.quinn@example.com",
+  "jobTitle": "Senior Backend Developer",
+  "hireDate": "2026-11-02",
+  "managerId": null,
+  "role": "Manager"
+}
+
+###
+
+DELETE {{EmployeeManager.Api_HostAddress}}/api/employees/{{employeeId}}
+Authorization: Bearer {{adminToken}}
+
+###

@@ -1,0 +1,98 @@
+<dialog #dialog class="card" aria-labelledby="employee-form-title" (cancel)="cancel($event)">
+  <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <h2 id="employee-form-title">{{ isEdit() ? 'Edit employee' : 'Add employee' }}</h2>
+
+    <div class="fields">
+      <div class="field">
+        <label for="firstName">First name</label>
+        <input id="firstName" formControlName="firstName" autocomplete="off" />
+        @if (fieldError('firstName'); as message) {
+          <p class="field-error">{{ message }}</p>
+        }
+      </div>
+
+      <div class="field">
+        <label for="lastName">Last name</label>
+        <input id="lastName" formControlName="lastName" autocomplete="off" />
+        @if (fieldError('lastName'); as message) {
+          <p class="field-error">{{ message }}</p>
+        }
+      </div>
+
+      <div class="field">
+        <label for="email">Email</label>
+        <input id="email" type="email" formControlName="email" autocomplete="off" />
+        @if (fieldError('email'); as message) {
+          <p class="field-error">{{ message }}</p>
+        }
+      </div>
+
+      <div class="field">
+        <label for="jobTitle">Job title</label>
+        <input id="jobTitle" formControlName="jobTitle" autocomplete="off" />
+        @if (fieldError('jobTitle'); as message) {
+          <p class="field-error">{{ message }}</p>
+        }
+      </div>
+
+      <div class="field">
+        <label for="hireDate">Hire date</label>
+        <input id="hireDate" type="date" formControlName="hireDate" />
+        @if (fieldError('hireDate'); as message) {
+          <p class="field-error">{{ message }}</p>
+        }
+      </div>
+
+      <div class="field">
+        <label for="managerId">Manager</label>
+        <select id="managerId" formControlName="managerId">
+          <option value="">No manager (top level)</option>
+          @for (manager of managerOptions(); track manager.id) {
+            <option [value]="manager.id">{{ manager.firstName }} {{ manager.lastName }}</option>
+          }
+        </select>
+        @if (fieldError('managerId'); as message) {
+          <p class="field-error">{{ message }}</p>
+        }
+      </div>
+
+      <div class="field">
+        <label for="role">Role</label>
+        <select id="role" formControlName="role">
+          @for (role of roles; track role) {
+            <option [value]="role">{{ role }}</option>
+          }
+        </select>
+        @if (fieldError('role'); as message) {
+          <p class="field-error">{{ message }}</p>
+        }
+      </div>
+
+      @if (!isEdit()) {
+        <div class="field">
+          <label for="password">Password</label>
+          <input
+            id="password"
+            type="password"
+            formControlName="password"
+            autocomplete="new-password"
+          />
+          @if (fieldError('password'); as message) {
+            <p class="field-error">{{ message }}</p>
+          }
+        </div>
+      }
+    </div>
+
+    @if (error()) {
+      <p class="form-error" role="alert">{{ error() }}</p>
+    }
+
+    <div class="actions">
+      <button type="button" class="secondary" (click)="cancel()">Cancel</button>
+      <button type="submit" [disabled]="submitting()">
+        {{ submitting() ? 'Saving…' : isEdit() ? 'Save changes' : 'Add employee' }}
+      </button>
+    </div>
+  </form>
+</dialog>
