@@ -1,12 +1,15 @@
 using EmployeeManager.Application.Common.Interfaces;
 using EmployeeManager.Domain.Common;
 using EmployeeManager.Domain.Entities;
+using EmployeeManager.Infrastructure.Identity;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace EmployeeManager.Infrastructure.Persistence;
 
 public class EmployeeManagerDbContext(DbContextOptions<EmployeeManagerDbContext> options)
-    : DbContext(options), IApplicationDbContext
+    : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>(options), IApplicationDbContext
 {
     public DbSet<Employee> Employees => Set<Employee>();
 
@@ -31,7 +34,8 @@ public class EmployeeManagerDbContext(DbContextOptions<EmployeeManagerDbContext>
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.ApplyConfigurationsFromAssembly(typeof(EmployeeManagerDbContext).Assembly);
+        // Identity's mapping goes first so our configurations can extend it (e.g. ApplicationUser's employee link).
         base.OnModelCreating(modelBuilder);
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(EmployeeManagerDbContext).Assembly);
     }
 }

@@ -12,6 +12,7 @@ public class EmployeesController(IOrgChartService orgChartService) : ControllerB
     /// </summary>
     [HttpGet("org-chart")]
     [ProducesResponseType<IReadOnlyList<OrgChartNodeDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<IReadOnlyList<OrgChartNodeDto>>> GetOrgChart(
         [FromQuery] Guid? rootId,

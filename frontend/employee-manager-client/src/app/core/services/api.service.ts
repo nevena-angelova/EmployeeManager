@@ -12,4 +12,8 @@ export class ApiService {
   get<T>(path: string, params?: Record<string, string>): Observable<T> {
     return this.http.get<T>(`${this.baseUrl}/${path}`, { params });
   }
+
+  post<T>(path: string, body: unknown): Observable<T> {
+    return this.http.post<T>(`${this.baseUrl}/${path}`, body);
+  }
 }
