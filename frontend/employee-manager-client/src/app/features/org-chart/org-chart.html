@@ -1,7 +1,7 @@
 <section class="page">
   <div class="page-intro">
     <div>
-      <p class="eyebrow"><span></span> People map</p>
+      <p class="eyebrow"><span></span> Your people map</p>
       <h2>See how your team connects.</h2>
       <p class="description">
         Explore the people, teams, and relationships that move your organisation forward.
@@ -14,14 +14,6 @@
     </div>
   </div>
 
-  <div class="chart-heading">
-    <div>
-      <h3>Reporting structure</h3>
-      <p>Start at the centre and follow each team outward.</p>
-    </div>
-    <span class="chart-key"><i></i> Direct reports</span>
-  </div>
-
   @if (orgChart.error()) {
     <div class="status error" role="alert">
       <p>The organisation chart couldn't be loaded.</p>
@@ -31,7 +23,6 @@
     <p class="status" aria-live="polite">Loading organisation chart…</p>
   } @else if (orgChart.value()?.length) {
     <div class="chart-scroller" #scroller>
-      <div class="chart-caption">Organisation at a glance</div>
       <ul class="roots">
         @for (root of orgChart.value(); track root.id) {
           <li><app-org-chart-branch [node]="root" /></li>
