@@ -3,8 +3,10 @@ using EmployeeManager.Application.Employees.Management;
 using EmployeeManager.Domain.Entities;
 using EmployeeManager.Infrastructure.Identity;
 using EmployeeManager.Infrastructure.Persistence;
+using EmployeeManager.Infrastructure.Persistence.Configurations;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace EmployeeManager.Infrastructure.Employees;
 
@@ -46,7 +48,10 @@ public class EmployeeManagementService(
             ManagerId = request.ManagerId,
         };
         db.Employees.Add(employee);
-        await db.SaveChangesAsync(cancellationToken);
+        if (await SaveEmployeeAsync(cancellationToken) is { } violation)
+        {
+            return EmployeeResult<EmployeeDto>.From(violation);
+        }
 
         var user = new ApplicationUser
         {
@@ -110,7 +115,10 @@ public class EmployeeManagementService(
         employee.JobTitle = request.JobTitle.Trim();
         employee.HireDate = request.HireDate;
         employee.ManagerId = request.ManagerId;
-        await db.SaveChangesAsync(cancellationToken);
+        if (await SaveEmployeeAsync(cancellationToken) is { } violation)
+        {
+            return EmployeeResult<EmployeeDto>.From(violation);
+        }
 
         if (user is not null)
         {
@@ -165,7 +173,18 @@ public class EmployeeManagementService(
 
         // The account is removed with the employee by the cascade on users.employee_id.
         db.Employees.Remove(employee);
-        await db.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex) when (IsViolation(ex, PostgresErrorCodes.RestrictViolation, EmployeeConfiguration.ManagerForeignKeyName))
+        {
+            // A report was assigned to them after the check above.
+            db.ChangeTracker.Clear();
+            return EmployeeResult.Conflict(
+                $"{employee.FirstName} {employee.LastName} has direct reports. Assign them to another manager first.");
+        }
+
         return EmployeeResult.Success();
     }
 
@@ -184,8 +203,8 @@ public class EmployeeManagementService(
             errors["role"] = [$"Role must be one of: {string.Join(", ", Roles.All)}."];
         }
 
-        var normalizedEmail = email.ToLowerInvariant();
-        if (await db.Employees.AnyAsync(e => e.Id != id && e.Email.ToLower() == normalizedEmail, cancellationToken))
+        // The email column's collation makes this comparison case-insensitive, and it can use the unique index.
+        if (await db.Employees.AnyAsync(e => e.Id != id && e.Email == email, cancellationToken))
         {
             errors["email"] = ["Another employee already uses this email."];
         }
@@ -223,6 +242,40 @@ public class EmployeeManagementService(
                     join ur in db.UserRoles on u.Id equals ur.UserId
                     join r in db.Roles on ur.RoleId equals r.Id
                     select r.Name).FirstOrDefault() ?? Roles.Employee));
+
+    /// <summary>
+    /// Saves the employee change, or returns the validation error for a constraint it broke (see
+    /// <see cref="ToValidationError"/>) after forgetting the tracked change so the context stays usable.
+    /// </summary>
+    private async Task<EmployeeResult?> SaveEmployeeAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await db.SaveChangesAsync(cancellationToken);
+            return null;
+        }
+        catch (DbUpdateException ex) when (ToValidationError(ex) is { } violation)
+        {
+            db.ChangeTracker.Clear();
+            return violation;
+        }
+    }
+
+    /// <summary>
+    /// Maps a constraint violation from a concurrent change that got past <see cref="ValidateAsync"/> (the same email
+    /// saved, or the manager deleted, in between) to the error the check would have given. Null for anything else.
+    /// </summary>
+    private static EmployeeResult? ToValidationError(DbUpdateException exception) =>
+        IsViolation(exception, PostgresErrorCodes.UniqueViolation, EmployeeConfiguration.EmailIndexName)
+            ? EmployeeResult.Invalid("email", "Another employee already uses this email.")
+            : IsViolation(exception, PostgresErrorCodes.ForeignKeyViolation, EmployeeConfiguration.ManagerForeignKeyName)
+                ? EmployeeResult.Invalid("managerId", "The selected manager doesn't exist.")
+                : null;
+
+    private static bool IsViolation(DbUpdateException exception, string sqlState, string constraintName) =>
+        exception.InnerException is PostgresException postgres
+        && postgres.SqlState == sqlState
+        && postgres.ConstraintName == constraintName;
 
     /// <summary>Files Identity's errors under the form field they're about.</summary>
     private static Dictionary<string, string[]> ToFieldErrors(IdentityResult result) =>
