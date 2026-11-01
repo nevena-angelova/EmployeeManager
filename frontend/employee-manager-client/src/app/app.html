@@ -1,5 +1,12 @@
 <header class="app-header">
   <h1>{{ title() }}</h1>
+  @if (user(); as user) {
+    <div class="account">
+      <span class="user-name">{{ user.firstName }} {{ user.lastName }}</span>
+      <span class="role">{{ user.role }}</span>
+      <button type="button" (click)="signOut()">Sign out</button>
+    </div>
+  }
 </header>
 <main>
   <router-outlet />

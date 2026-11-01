@@ -39,7 +39,7 @@ npm test -- --include <path/to/file.spec.ts>   # single spec file
 npx prettier --write <changed files>        # formatting (.prettierrc); no ESLint configured
 ```
 
-Health check (includes DB connectivity): `GET http://localhost:5062/api/health`. OpenAPI document is mapped only in Development.
+Health check (includes DB connectivity, anonymous): `GET http://localhost:5062/api/health`. OpenAPI document is mapped only in Development.
 
 Gotchas:
 - The connection string only exists in `appsettings.Development.json`, and the `Development` environment comes from the launch profile. If you run the API with `--no-launch-profile` (e.g. a second instance with `--urls http://localhost:5063` when 5062 is taken), set `ASPNETCORE_ENVIRONMENT=Development`. Otherwise every DB call fails with database `''`.
@@ -54,14 +54,28 @@ Clean Architecture in `backend/src`, dependencies pointing inward: `Api → Appl
   - Use cases are grouped by feature folder, e.g. `Employees/OrgChart/` with an `IXxxService` + `XxxService` pair, `XxxDto` records, and pure helper classes.
   - Keep logic in pure static helpers (e.g. `OrgChartBuilder`) so it can be unit-tested without a DB. The UnitTests project only references Domain + Application.
   - Register services in `AddApplication()`.
-- **Infrastructure** — `EmployeeManagerDbContext` implements `IApplicationDbContext`; registered in `AddInfrastructure()`, which also maps the interface to the same scoped context instance. Its `SaveChangesAsync` override stamps `CreatedAt`/`UpdatedAt` (UTC) for every `BaseEntity` — don't set these manually.
-- **Api** — controllers go in `Controllers/`. They are thin `[ApiController]`s with primary-constructor injection of Application services, and they declare `[ProducesResponseType]` so the OpenAPI doc is accurate. `Program.cs` reads connection string `ConnectionStrings:EmployeeManagerDb` (throws if missing) and CORS origins from `Cors:AllowedOrigins`. Dev values live in `appsettings.Development.json`; `appsettings.json` leaves them empty.
+- **Infrastructure** — `EmployeeManagerDbContext` is an `IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>` and implements `IApplicationDbContext`; registered in `AddInfrastructure()`, which also maps the interface to the same scoped context instance. Its `SaveChangesAsync` override stamps `CreatedAt`/`UpdatedAt` (UTC) for every `BaseEntity` — don't set these manually.
+- **Api** — controllers go in `Controllers/`. Every endpoint requires a signed-in user (fallback authorization policy) unless it opts out with `[AllowAnonymous]`. They are thin `[ApiController]`s with primary-constructor injection of Application services, and they declare `[ProducesResponseType]` so the OpenAPI doc is accurate. `Program.cs` reads connection string `ConnectionStrings:EmployeeManagerDb` (throws if missing) and CORS origins from `Cors:AllowedOrigins`. Dev values live in `appsettings.Development.json`; `appsettings.json` leaves them empty.
 
 ### Persistence conventions
 
 - Snake_case DB naming is applied globally via `UseSnakeCaseNamingConvention()` — write C# names in PascalCase; raw SQL (e.g. check constraints) must use snake_case column names.
 - Entity mapping lives in `IEntityTypeConfiguration<T>` classes under `Infrastructure/Persistence/Configurations/`, picked up automatically by `ApplyConfigurationsFromAssembly`. Adding a new entity means: entity in Domain, `DbSet` on both `IApplicationDbContext` and the DbContext, a configuration class, then a migration.
 - Migrations live in `Infrastructure/Persistence/Migrations`.
+
+### Authentication and roles
+
+ASP.NET Core Identity (Identity Core only, no cookies) stores users and roles; the API authenticates with JWT bearer tokens.
+
+- `ApplicationUser` (`Infrastructure/Identity`) is a sign-in account linked 1:1 to an `Employee` via `EmployeeId` (cascade delete). The user name and email are the employee's email.
+- Two roles, defined in `Application/Auth/Roles`: `Employee` and `Manager`. Each user has exactly one. The seeder makes anyone with direct reports a Manager. Roles are stored, not derived, so they don't change by themselves when the hierarchy changes.
+- Manager-only endpoints use `[Authorize(Policy = AuthorizationPolicies.ManagerOnly)]` (the policy exists, but nothing uses it yet).
+- Tokens use short claim names (`sub` = user id, `email`, `role`); `MapInboundClaims` is off, so read them with `JwtRegisteredClaimNames` / `JwtOptions.RoleClaimType`.
+- JWT settings live in the `Jwt` section (`Issuer`, `Audience`, `SigningKey`, `ExpiryMinutes`). `SigningKey` is only set in `appsettings.Development.json`; the API refuses to start without a key of 32+ bytes.
+- Identity tables are renamed to snake_case (`users`, `roles`, `user_roles`, ...) in `IdentityTablesConfiguration`/`ApplicationUserConfiguration`, since Identity's explicit table names bypass the naming convention. The base `OnModelCreating` runs before `ApplyConfigurationsFromAssembly`.
+- Failed logins count towards Identity's lockout (5 failures → 5 minutes).
+
+`POST /api/auth/login` (anonymous) takes `{ email, password }` and returns `{ accessToken, expiresAt, user }`; wrong credentials or lockout give 401. `GET /api/auth/me` returns the current user (`employeeId`, `email`, `firstName`, `lastName`, `jobTitle`, `role`).
 
 ### Employee domain rules
 
@@ -78,11 +92,17 @@ The DB does **not** prevent longer manager cycles (A → B → A), so any code t
 - `rootId` returns a one-element array for that subtree. An unknown id gives 404, and a malformed GUID gives 400.
 - All employees are loaded in a single `AsNoTracking` projection and the tree is assembled in memory.
 
-The Development seeder (`DevelopmentDataSeeder`) creates 15 employees under one CEO, Margaret Hayes.
+The Development seeder (`DevelopmentDataSeeder`) creates 15 employees under one CEO, Margaret Hayes, then the roles, then an account for every employee without one. Every seeded account's password is `DevelopmentDataSeeder.DevelopmentPassword`; emails are `first.last@example.com` (e.g. `margaret.hayes@example.com` is a Manager, `ethan.clarke@example.com` an Employee). Each step is skipped if its data exists, so an existing dev DB gets accounts on the next run.
 
 ### Front end
 
-`src/app` is split into `core/` (singletons, e.g. `ApiService`), `shared/`, and `features/`. `ApiService` prefixes requests with `environment.apiUrl` — `http://localhost:5062/api` in development (direct call, relies on API CORS), `/api` in production. `ApiService.get(path, params?)` takes optional query params. Uses `inject()` rather than constructor injection.
+`src/app` is split into `core/` (singletons, e.g. `ApiService`), `shared/`, and `features/`. `ApiService` prefixes requests with `environment.apiUrl` — `http://localhost:5062/api` in development (direct call, relies on API CORS), `/api` in production. `ApiService.get(path, params?)` takes optional query params; `ApiService.post(path, body)` posts JSON. Uses `inject()` rather than constructor injection.
+
+Auth (`core/auth/`):
+- `AuthService` holds the session (`LoginResult`) in a signal, persisted to `localStorage`; `currentUser` is a signal and `accessToken()` returns null (and signs out) once the token has expired.
+- `authInterceptor` adds `Authorization: Bearer` to requests under `environment.apiUrl` only. On a 401 for a request that carried a token, it signs out and navigates to `/login?returnUrl=...`.
+- `authGuard` protects routes; add `canActivate: [authGuard]` to every new feature route.
+- The router uses `withComponentInputBinding()`, so query/route params bind to component `input()`s (e.g. `Login.returnUrl`).
 
 Conventions:
 - Component classes have no `Component` suffix and files are named like `org-chart.ts|html|scss` (the Angular 20+ style, as with `App`).
@@ -93,6 +113,7 @@ Conventions:
 - The app is light-only (`color-scheme: light`) and deliberately ignores the system dark mode.
 
 Features:
+- `features/login/` (route `/login`) is a reactive-forms sign-in page. It only follows in-app `returnUrl`s (starting with a single `/`). The `App` header shows the user's name, role and a Sign out button when signed in.
 - `features/org-chart/` (route `/org-chart`, which is also the default route) draws the org chart top-down.
   - `OrgChart` is the page. It handles the loading, error-with-retry and empty states, and starts the horizontally scrolling chart centred on the top of the tree.
   - `OrgChartBranch` is a recursive component that renders one card plus its reports. Each card collapses or expands its team.
