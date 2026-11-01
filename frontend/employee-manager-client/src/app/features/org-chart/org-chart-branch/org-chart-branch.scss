@@ -1,7 +1,13 @@
-// Connector lines use the classic nested-list technique: the list draws a vertical line down from the
-// parent card, each item draws its half of the horizontal bar plus a stub down to its own card.
-$gap: 24px;
-$line: 1px solid var(--color-connector);
+// Reporting lines are drawn like a transit map: each team's line is the `--line` colour set on its list
+// item, and people without one (top-level managers) are drawn in ink.
+//
+// Connectors use the classic nested-list technique: the list draws a vertical line down from the
+// parent's station, each item draws its half of the horizontal bar plus a stub down to its own stop.
+$gap: 28px;
+$width: 4px;
+$half: 2px;
+$colour: var(--line, var(--color-ink));
+$line: $width solid $colour;
 
 :host {
   display: flex;
@@ -9,72 +15,68 @@ $line: 1px solid var(--color-connector);
   align-items: center;
 }
 
-.card {
+.station {
   position: relative;
-  box-sizing: border-box;
-  width: 200px;
-  padding: 16px 12px 12px;
-  border: 1px solid rgb(173 183 220 / 58%);
-  border-radius: 18px;
-  background: linear-gradient(145deg, #ffffff 0%, #f9f8ff 100%);
-  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 204px;
+  padding: 0 6px 6px;
   text-align: center;
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease;
 
-  &::before {
+  // A folded team leaves a dashed stub, so it's clear the line carries on.
+  &.collapsed::after {
     position: absolute;
-    top: 0;
-    right: 18px;
-    left: 18px;
-    height: 3px;
-    border-radius: 0 0 5px 5px;
-    background: linear-gradient(90deg, var(--color-accent), var(--color-teal), var(--color-warm));
+    top: 100%;
+    left: calc(50% - #{$half});
+    height: 18px;
+    border-left: $width dashed $colour;
     content: '';
-  }
-
-  &:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--shadow-floating);
   }
 }
 
-.avatar {
-  display: grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  margin: 0 auto 8px;
+.stop {
+  width: 18px;
+  height: 18px;
+  margin-bottom: 8px;
+  border: $line;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--color-accent-soft), #d7f4ef);
-  color: var(--color-accent-deep);
-  font-weight: 600;
-  letter-spacing: 0.02em;
+  background: var(--color-surface);
+
+  // Top-level managers are the interchange every line leaves from.
+  .top & {
+    width: 26px;
+    height: 26px;
+    border-width: 6px;
+  }
 }
 
 .name {
   margin: 0;
   font-weight: 600;
+  line-height: 1.3;
 }
 
 .job-title {
-  margin: 2px 0 6px;
+  margin: 2px 0 4px;
   color: var(--color-muted);
   font-size: 0.875rem;
+  line-height: 1.3;
 }
 
 .email {
-  display: block;
+  max-width: 100%;
   overflow: hidden;
-  color: var(--color-accent-deep);
+  color: var(--color-muted);
   font-size: 0.8125rem;
-  text-decoration: none;
+  text-decoration-color: var(--color-rule);
   text-overflow: ellipsis;
+  text-underline-offset: 3px;
   white-space: nowrap;
 
   &:hover {
-    text-decoration: underline;
+    color: var(--color-ink);
+    text-decoration-color: currentColor;
   }
 }
 
@@ -82,25 +84,19 @@ $line: 1px solid var(--color-connector);
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  margin-top: 10px;
-  padding: 4px 10px;
-  border: 1px solid rgb(173 183 220 / 72%);
+  margin-top: 8px;
+  padding: 3px 10px 1px;
+  border: 1.5px solid var(--color-rule);
   border-radius: 999px;
-  background: transparent;
-  color: var(--color-muted);
+  background: var(--color-surface);
+  color: var(--color-ink);
   font: inherit;
   font-size: 0.8125rem;
+  font-weight: 600;
   cursor: pointer;
 
   &:hover {
-    border-color: var(--color-accent);
-    color: var(--color-accent);
-    background: var(--color-accent-soft);
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--color-accent);
-    outline-offset: 2px;
+    border-color: $colour;
   }
 }
 
@@ -121,12 +117,16 @@ $line: 1px solid var(--color-connector);
   list-style: none;
 
   &::before {
-    content: '';
     position: absolute;
     top: 0;
-    left: 50%;
+    left: calc(50% - #{$half});
     height: $gap;
     border-left: $line;
+    content: '';
+  }
+
+  &.reveal {
+    animation: draw 0.4s ease-out;
   }
 
   > li {
@@ -135,18 +135,18 @@ $line: 1px solid var(--color-connector);
 
     &::before,
     &::after {
-      content: '';
       position: absolute;
       top: 0;
-      right: 50%;
-      width: 50%;
+      right: calc(50% - #{$half});
+      width: calc(50% + #{$half});
       height: $gap;
       border-top: $line;
+      content: '';
     }
 
     &::after {
       right: auto;
-      left: 50%;
+      left: calc(50% - #{$half});
       border-left: $line;
     }
 
@@ -165,12 +165,33 @@ $line: 1px solid var(--color-connector);
     }
 
     &:first-child::after {
-      border-radius: 8px 0 0 0;
+      border-radius: 12px 0 0 0;
     }
 
     &:last-child::before {
       border-right: $line;
-      border-radius: 0 8px 0 0;
+      border-radius: 0 12px 0 0;
     }
+  }
+}
+
+// Opening a team draws its lines in from the station downwards.
+@keyframes draw {
+  from {
+    clip-path: inset(0 0 100% 0);
+  }
+
+  to {
+    clip-path: inset(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chevron {
+    transition: none;
+  }
+
+  .reports.reveal {
+    animation: none;
   }
 }

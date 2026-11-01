@@ -1,175 +1,136 @@
 .app-header {
-  position: relative;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 16px clamp(16px, 4vw, 56px);
-  overflow: hidden;
-  background: linear-gradient(115deg, #211653 0%, #3b2b9a 48%, #087f86 100%);
-  color: var(--color-on-accent);
-  box-shadow: 0 10px 30px rgb(42 35 112 / 18%);
-
-  &::after {
-    position: absolute;
-    top: -90px;
-    right: 12%;
-    width: 220px;
-    height: 220px;
-    border: 1px solid rgb(255 255 255 / 18%);
-    border-radius: 50%;
-    box-shadow:
-      0 0 0 22px rgb(255 255 255 / 5%),
-      0 0 0 44px rgb(255 255 255 / 4%);
-    content: '';
-  }
+  gap: 12px 24px;
+  padding: 0 clamp(16px, 4vw, 56px);
+  border-bottom: 2px solid var(--color-ink);
+  background: var(--color-surface);
 }
 
 .brand {
-  z-index: 1;
   display: inline-flex;
   align-items: center;
   gap: 10px;
+  padding: 14px 0;
   color: inherit;
   text-decoration: none;
 
-  h1,
-  small {
-    display: block;
-  }
-
   h1 {
     margin: 0;
-    font-size: 1rem;
-    font-weight: 700;
-    letter-spacing: 0.01em;
-  }
-
-  small {
-    margin-top: 1px;
-    color: rgb(255 255 255 / 66%);
-    font-size: 0.68rem;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+    font-size: 1.0625rem;
+    font-weight: 800;
+    letter-spacing: -0.01em;
   }
 }
 
 .brand-mark {
-  display: flex;
-  align-items: end;
-  gap: 3px;
   width: 32px;
-  height: 32px;
-  padding: 7px;
-  box-sizing: border-box;
-  border: 1px solid rgb(255 255 255 / 32%);
-  border-radius: 11px;
-  background: rgb(255 255 255 / 14%);
+  height: 20px;
 
-  span {
-    flex: 1;
-    border-radius: 3px 3px 1px 1px;
-    background: var(--color-warm);
+  path {
+    fill: none;
+    stroke: var(--line-1);
+    stroke-linejoin: round;
+    stroke-width: 3;
+  }
 
-    &:nth-child(1) {
-      height: 8px;
-    }
-    &:nth-child(2) {
-      height: 14px;
-      background: #75e1d4;
-    }
-    &:nth-child(3) {
-      height: 20px;
-    }
+  circle {
+    fill: var(--color-surface);
+    stroke: var(--color-ink);
+    stroke-width: 2.5;
   }
 }
 
+// The active page is marked like a line under the station name, sitting on the header's bottom rule.
 .main-nav {
-  z-index: 1;
   display: flex;
+  align-self: stretch;
   gap: 4px;
   margin-right: auto;
-  margin-left: clamp(8px, 3vw, 32px);
 
   a {
-    padding: 6px 12px;
-    border-radius: 8px;
-    color: rgb(255 255 255 / 78%);
-    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+    padding: 4px 12px 0;
+    border-bottom: 4px solid transparent;
+    margin-bottom: -2px;
+    color: var(--color-muted);
     font-weight: 600;
     text-decoration: none;
 
     &:hover {
-      background: rgb(255 255 255 / 10%);
-      color: var(--color-on-accent);
+      color: var(--color-ink);
     }
 
     &.active {
-      background: rgb(255 255 255 / 18%);
-      color: var(--color-on-accent);
+      border-bottom-color: var(--color-ink);
+      color: var(--color-ink);
     }
   }
 }
 
 .account {
-  z-index: 1;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 16px;
   font-size: 0.875rem;
 }
 
-.role {
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: rgb(255 255 255 / 15%);
-  color: #fff;
-  font-size: 0.75rem;
+.who {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.25;
+}
+
+.user-name {
   font-weight: 600;
 }
 
-.account-avatar {
-  display: grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--color-warm), #ff7e9f);
-  color: #38204d;
-  font-size: 0.7rem;
-  font-weight: 800;
+.role {
+  color: var(--color-muted);
+  font-size: 0.8125rem;
 }
 
 button {
-  padding: 4px 12px;
-  border: 1px solid rgb(255 255 255 / 28%);
-  border-radius: 8px;
-  background: rgb(255 255 255 / 10%);
-  color: var(--color-on-accent);
+  padding: 6px 12px 4px;
+  border: 1.5px solid var(--color-rule);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-ink);
   font: inherit;
+  font-weight: 600;
   cursor: pointer;
 
   &:hover {
-    border-color: rgb(255 255 255 / 60%);
-    background: rgb(255 255 255 / 18%);
+    border-color: var(--color-ink);
   }
 }
 
-// On phones the name gives way and the nav drops to its own row under the brand and account.
+// On phones the nav drops to its own row under the brand and account.
 @media (max-width: 600px) {
   .app-header {
     flex-wrap: wrap;
-    padding-inline: 16px;
+    justify-content: space-between;
+    column-gap: 12px;
+  }
+
+  .account {
+    gap: 10px;
   }
 
   .main-nav {
     order: 1;
     width: 100%;
-    margin: 0;
+    margin: 0 0 0 -12px;
+
+    a {
+      padding-block: 6px 8px;
+    }
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 420px) {
   .user-name {
     display: none;
   }

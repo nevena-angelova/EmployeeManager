@@ -1,35 +1,39 @@
 <section class="page">
   <div class="page-intro">
-    <div>
-      <p class="eyebrow"><span></span> Your people map</p>
-      <h2>See how your team connects.</h2>
-      <p class="description">
-        Explore the people, teams, and relationships that move your organisation forward.
-      </p>
-    </div>
-    <div class="intro-badge" aria-hidden="true">
-      <span class="badge-orbit orbit-one"></span>
-      <span class="badge-orbit orbit-two"></span>
-      <span class="badge-core">✦</span>
-    </div>
+    <h2>Who reports to whom</h2>
+    <p class="description">
+      Each coloured line is one team. Follow it down to see everyone in that team, or use the report
+      count under someone to fold their team away.
+    </p>
   </div>
 
   @if (orgChart.error()) {
     <div class="status error" role="alert">
-      <p>The organisation chart couldn't be loaded.</p>
+      <p>The organisation chart couldn't be loaded. Check your connection, then try again.</p>
       <button type="button" (click)="orgChart.reload()">Retry</button>
     </div>
   } @else if (orgChart.isLoading()) {
     <p class="status" aria-live="polite">Loading organisation chart…</p>
   } @else if (orgChart.value()?.length) {
+    @if (teams().length) {
+      <ul class="legend" aria-label="Teams">
+        @for (team of teams(); track team.lead.id) {
+          <li [style.--line]="team.colour">
+            <span class="swatch" aria-hidden="true"></span>
+            <span class="team">{{ team.lead.firstName }} {{ team.lead.lastName }}’s team</span>
+            <span class="size">{{ team.size }} {{ team.size === 1 ? 'person' : 'people' }}</span>
+          </li>
+        }
+      </ul>
+    }
     <div class="chart-scroller" #scroller>
       <ul class="roots">
         @for (root of orgChart.value(); track root.id) {
-          <li><app-org-chart-branch [node]="root" /></li>
+          <li><app-org-chart-branch [node]="root" [lines]="lines()" /></li>
         }
       </ul>
     </div>
   } @else {
-    <p class="status">No employees yet.</p>
+    <p class="status">No employees yet. An admin can add people from the Employees page.</p>
   }
 </section>

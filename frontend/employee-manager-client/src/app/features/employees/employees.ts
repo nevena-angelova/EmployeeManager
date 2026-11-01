@@ -1,8 +1,10 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, ElementRef, effect, inject, signal, viewChild } from '@angular/core';
+import { computed } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 
+import { lineColour, teamLines } from '../../shared/team-lines';
 import { EmployeeForm } from './employee-form/employee-form';
 import { Employee } from './employee.model';
 import { EmployeesService } from './employees.service';
@@ -18,6 +20,7 @@ export class Employees {
   private readonly employeesService = inject(EmployeesService);
 
   protected readonly employees = rxResource({ stream: () => this.employeesService.list() });
+  protected readonly lines = computed(() => teamLines(this.employees.value() ?? []));
 
   /** Whether the Add employee dialog is open. */
   protected readonly adding = signal(false);
@@ -40,6 +43,8 @@ export class Employees {
         dialog.setAttribute('open', '');
       }
     });
+  protected colour(id: string): string | null {
+    return lineColour(this.lines(), id);
   }
 
   protected add(): void {

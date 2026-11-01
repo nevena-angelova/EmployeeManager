@@ -34,12 +34,26 @@ describe('OrgChartBranch', () => {
   it('renders the employee card', async () => {
     await render(employee('Margaret', 'Hayes'));
 
-    expect(element.querySelector('.avatar')?.textContent?.trim()).toBe('MH');
     expect(names()).toEqual(['Margaret Hayes']);
     expect(element.querySelector('.job-title')?.textContent?.trim()).toBe("Margaret's title");
     expect(element.querySelector('.email')?.getAttribute('href')).toBe(
       'mailto:margaret.hayes@example.com',
     );
+  });
+
+  it('colours each report with their team line, and leaves people without one in ink', async () => {
+    fixture = TestBed.createComponent(OrgChartBranch);
+    fixture.componentRef.setInput(
+      'node',
+      employee('Margaret', 'Hayes', [employee('Daniel', 'Okafor'), employee('Sofia', 'Marin')]),
+    );
+    fixture.componentRef.setInput('lines', new Map([['Daniel-Okafor', 2]]));
+    await fixture.whenStable();
+    element = fixture.nativeElement as HTMLElement;
+
+    const items = [...element.querySelectorAll<HTMLElement>('.reports > li')];
+    expect(items.map((li) => li.style.getPropertyValue('--line'))).toEqual(['var(--line-2)', '']);
+    expect(element.querySelector('.station')?.classList).toContain('top');
   });
 
   it('has no toggle for an employee without reports', async () => {
