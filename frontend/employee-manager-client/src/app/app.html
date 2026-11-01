@@ -1,7 +1,16 @@
 <header class="app-header">
-  <h1>{{ title() }}</h1>
+  <a class="brand" routerLink="/" aria-label="EmployeeManager home">
+    <span class="brand-mark" aria-hidden="true"> <span></span><span></span><span></span> </span>
+    <span>
+      <h1>{{ title() }}</h1>
+      <small>People, connected</small>
+    </span>
+  </a>
   @if (user(); as user) {
     <div class="account">
+      <span class="account-avatar" aria-hidden="true"
+        >{{ user.firstName[0] }}{{ user.lastName[0] }}</span
+      >
       <span class="user-name">{{ user.firstName }} {{ user.lastName }}</span>
       <span class="role">{{ user.role }}</span>
       <button type="button" (click)="signOut()">Sign out</button>

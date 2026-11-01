@@ -1,17 +1,95 @@
 .page {
-  padding: 24px 16px;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: clamp(32px, 5vw, 64px) clamp(16px, 5vw, 64px);
+}
+
+.page-intro {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  margin-bottom: 34px;
+}
+
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  color: var(--color-teal);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+
+  span {
+    width: 24px;
+    height: 3px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--color-teal), var(--color-warm));
+  }
 }
 
 h2 {
-  margin: 0 0 24px;
-  font-size: 1.25rem;
-  font-weight: 600;
+  max-width: 640px;
+  margin: 0;
+  color: var(--color-text);
+  font-size: clamp(1.8rem, 4vw, 3rem);
+  font-weight: 800;
+  letter-spacing: -0.045em;
+  line-height: 1.05;
+}
+
+.description {
+  max-width: 580px;
+  margin: 14px 0 0;
+  color: var(--color-muted);
+  font-size: 1rem;
+}
+
+.intro-badge {
+  position: relative;
+  flex: 0 0 108px;
+  height: 108px;
+  transform: rotate(12deg);
+}
+
+.badge-core,
+.badge-orbit {
+  position: absolute;
+  inset: 20px;
+  border-radius: 50%;
+}
+
+.badge-core {
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, var(--color-accent), var(--color-teal));
+  box-shadow: 0 12px 24px rgb(91 75 219 / 26%);
+  color: var(--color-warm);
+  font-size: 2rem;
+}
+
+.badge-orbit {
+  inset: 8px;
+  border: 1px dashed rgb(91 75 219 / 42%);
+
+  &.orbit-two {
+    inset: 0;
+    transform: rotate(68deg);
+    border-color: rgb(14 170 163 / 36%);
+  }
 }
 
 // Wide orgs scroll inside this box instead of widening the whole page.
 .chart-scroller {
+  padding: 26px 26px 28px;
+  border: 1px solid rgb(173 183 220 / 42%);
+  border-radius: 24px;
+  background: rgb(255 255 255 / 48%);
+  box-shadow: var(--shadow-card);
   overflow-x: auto;
-  padding-bottom: 16px;
 }
 
 .roots {
@@ -26,6 +104,7 @@ h2 {
 }
 
 .status {
+  padding: 28px;
   color: var(--color-muted);
   text-align: center;
 }
@@ -43,5 +122,22 @@ h2 {
     color: var(--color-on-accent);
     font: inherit;
     cursor: pointer;
+  }
+
+  @media (max-width: 600px) {
+    .page-intro {
+      align-items: flex-start;
+    }
+
+    .intro-badge {
+      flex-basis: 64px;
+      height: 64px;
+      transform: rotate(12deg) scale(0.7);
+      transform-origin: top right;
+    }
+
+    .description {
+      font-size: 0.9rem;
+    }
   }
 }
