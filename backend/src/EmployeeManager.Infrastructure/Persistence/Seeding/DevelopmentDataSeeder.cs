@@ -16,11 +16,15 @@ public static class DevelopmentDataSeeder
     /// <summary>The password of every seeded account. Development only.</summary>
     public const string DevelopmentPassword = "Passw0rd!";
 
+    /// <summary>The seeded employee whose account is an Admin.</summary>
+    public const string AdminEmail = "grace.turner@example.com";
+
     public static async Task SeedAsync(IServiceProvider services, CancellationToken cancellationToken = default)
     {
         var db = services.GetRequiredService<EmployeeManagerDbContext>();
 
         await SeedEmployeesAsync(db, cancellationToken);
+        await SeedAdminEmployeeAsync(db, cancellationToken);
         await SeedRolesAsync(services.GetRequiredService<RoleManager<IdentityRole<Guid>>>());
         await SeedUsersAsync(db, services.GetRequiredService<UserManager<ApplicationUser>>(), cancellationToken);
     }
@@ -65,6 +69,21 @@ public static class DevelopmentDataSeeder
         await db.SaveChangesAsync(cancellationToken);
     }
 
+    /// <summary>Adds the admin under the CEO. A separate step so existing development databases get her too.</summary>
+    private static async Task SeedAdminEmployeeAsync(EmployeeManagerDbContext db, CancellationToken cancellationToken)
+    {
+        if (await db.Employees.AnyAsync(e => e.Email == AdminEmail, cancellationToken))
+        {
+            return;
+        }
+
+        var ceo = await db.Employees.FirstOrDefaultAsync(e => e.ManagerId == null, cancellationToken);
+        var admin = Create("Grace", "Turner", "People Operations Administrator", new DateOnly(2019, 7, 1), ceo);
+
+        db.Employees.Add(admin);
+        await db.SaveChangesAsync(cancellationToken);
+    }
+
     private static async Task SeedRolesAsync(RoleManager<IdentityRole<Guid>> roleManager)
     {
         foreach (var role in Roles.All)
@@ -76,7 +95,7 @@ public static class DevelopmentDataSeeder
         }
     }
 
-    /// <summary>Gives every employee without an account one, as a Manager if they have direct reports.</summary>
+    /// <summary>Gives every employee without an account one: the admin as Admin, anyone else with direct reports as Manager.</summary>
     private static async Task SeedUsersAsync(
         EmployeeManagerDbContext db,
         UserManager<ApplicationUser> userManager,
@@ -98,7 +117,8 @@ public static class DevelopmentDataSeeder
             };
 
             ThrowIfFailed(await userManager.CreateAsync(user, DevelopmentPassword));
-            ThrowIfFailed(await userManager.AddToRoleAsync(user, Roles.ForEmployee(employee.HasDirectReports)));
+            var role = employee.Email == AdminEmail ? Roles.Admin : Roles.ForEmployee(employee.HasDirectReports);
+            ThrowIfFailed(await userManager.AddToRoleAsync(user, role));
         }
     }
 

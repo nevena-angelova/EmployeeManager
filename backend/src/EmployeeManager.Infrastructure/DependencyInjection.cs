@@ -1,5 +1,7 @@
 using EmployeeManager.Application.Auth;
 using EmployeeManager.Application.Common.Interfaces;
+using EmployeeManager.Application.Employees.Management;
+using EmployeeManager.Infrastructure.Employees;
 using EmployeeManager.Infrastructure.Identity;
 using EmployeeManager.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Identity;
@@ -29,6 +31,7 @@ public static class DependencyInjection
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton<JwtTokenGenerator>();
         services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IEmployeeManagementService, EmployeeManagementService>();
 
         return services;
     }

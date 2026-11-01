@@ -46,6 +46,18 @@ describe('App', () => {
     expect(compiled.querySelector('.role')?.textContent).toBe('Employee');
   });
 
+  it('shows the Org chart link but not Employees to non-admins', async () => {
+    const compiled = await render(ethan);
+    const links = [...compiled.querySelectorAll('.main-nav a')].map((a) => a.textContent?.trim());
+    expect(links).toEqual(['Org chart']);
+  });
+
+  it('shows the Employees link to Admins', async () => {
+    const compiled = await render({ ...ethan, role: 'Admin' });
+    const links = [...compiled.querySelectorAll('.main-nav a')].map((a) => a.textContent?.trim());
+    expect(links).toEqual(['Org chart', 'Employees']);
+  });
+
   it('signs out and goes to the login page', async () => {
     const compiled = await render(ethan);
     const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);

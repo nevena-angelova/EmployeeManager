@@ -1,22 +1,30 @@
 :root {
   color-scheme: light;
 
-  --color-surface: #f6f7f9;
+  --color-surface: #f5f7ff;
   --color-card: #ffffff;
-  --color-border: #dfe3e8;
-  --color-connector: #b8c0cc;
-  --color-text: #1f2933;
-  --color-muted: #5f6b7a;
-  --color-accent: #2f62d8;
-  --color-accent-soft: #e5edfc;
+  --color-border: #dce2f2;
+  --color-connector: #aab8d5;
+  --color-text: #18233f;
+  --color-muted: #687694;
+  --color-accent: #5b4bdb;
+  --color-accent-deep: #3829a7;
+  --color-accent-soft: #ece9ff;
+  --color-teal: #0eaaa3;
+  --color-warm: #ffb454;
   --color-on-accent: #ffffff;
-  --color-danger: #c62828;
-  --shadow-card: 0 1px 2px rgb(16 24 40 / 6%);
+  --color-danger: #c43d62;
+  --shadow-card: 0 14px 35px rgb(42 50 106 / 10%);
+  --shadow-floating: 0 24px 60px rgb(42 50 106 / 16%);
 }
 
 body {
   margin: 0;
-  background: var(--color-surface);
+  min-width: 320px;
+  background:
+    radial-gradient(circle at 8% 0%, rgb(111 91 230 / 12%), transparent 28rem),
+    radial-gradient(circle at 95% 22%, rgb(14 170 163 / 10%), transparent 24rem),
+    var(--color-surface);
   color: var(--color-text);
   font-family:
     system-ui,

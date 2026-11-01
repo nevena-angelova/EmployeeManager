@@ -68,8 +68,8 @@ Clean Architecture in `backend/src`, dependencies pointing inward: `Api → Appl
 ASP.NET Core Identity (Identity Core only, no cookies) stores users and roles; the API authenticates with JWT bearer tokens.
 
 - `ApplicationUser` (`Infrastructure/Identity`) is a sign-in account linked 1:1 to an `Employee` via `EmployeeId` (cascade delete). The user name and email are the employee's email.
-- Two roles, defined in `Application/Auth/Roles`: `Employee` and `Manager`. Each user has exactly one. The seeder makes anyone with direct reports a Manager. Roles are stored, not derived, so they don't change by themselves when the hierarchy changes.
-- Manager-only endpoints use `[Authorize(Policy = AuthorizationPolicies.ManagerOnly)]` (the policy exists, but nothing uses it yet).
+- Three roles, defined in `Application/Auth/Roles`: `Employee`, `Manager` and `Admin`. Each user has exactly one. The seeder makes anyone with direct reports a Manager, and `DevelopmentDataSeeder.AdminEmail` an Admin. Roles are stored, not derived, so they don't change by themselves when the hierarchy changes. An admin sets them when creating/editing an employee; the new role is in the token from the user's next sign-in.
+- Role-restricted endpoints use `[Authorize(Policy = AuthorizationPolicies.AdminOnly)]` or `ManagerOnly` (nothing uses `ManagerOnly` yet).
 - Tokens use short claim names (`sub` = user id, `email`, `role`); `MapInboundClaims` is off, so read them with `JwtRegisteredClaimNames` / `JwtOptions.RoleClaimType`.
 - JWT settings live in the `Jwt` section (`Issuer`, `Audience`, `SigningKey`, `ExpiryMinutes`). `SigningKey` is only set in `appsettings.Development.json`; the API refuses to start without a key of 32+ bytes.
 - Identity tables are renamed to snake_case (`users`, `roles`, `user_roles`, ...) in `IdentityTablesConfiguration`/`ApplicationUserConfiguration`, since Identity's explicit table names bypass the naming convention. The base `OnModelCreating` runs before `ApplyConfigurationsFromAssembly`.
@@ -92,16 +92,22 @@ The DB does **not** prevent longer manager cycles (A → B → A), so any code t
 - `rootId` returns a one-element array for that subtree. An unknown id gives 404, and a malformed GUID gives 400.
 - All employees are loaded in a single `AsNoTracking` projection and the tree is assembled in memory.
 
-The Development seeder (`DevelopmentDataSeeder`) creates 15 employees under one CEO, Margaret Hayes, then the roles, then an account for every employee without one. Every seeded account's password is `DevelopmentDataSeeder.DevelopmentPassword`; emails are `first.last@example.com` (e.g. `margaret.hayes@example.com` is a Manager, `ethan.clarke@example.com` an Employee). Each step is skipped if its data exists, so an existing dev DB gets accounts on the next run.
+Admin-only employee management (`EmployeesController` → `IEmployeeManagementService`, implemented in `Infrastructure/Employees/EmployeeManagementService` because it needs `UserManager`):
+- `GET /api/employees` (sorted by name), `GET /api/employees/{id}`, `POST` (creates the employee **and** their `ApplicationUser` with the given `password` and `role`, in one transaction), `PUT /{id}` (keeps the account's email/user name and role in step), `DELETE /{id}` (the account cascades).
+- Rule violations come back as an `EmployeeResult` that the controller maps to 400 `ValidationProblem` (errors keyed by camelCase field), 404, or 409 `ProblemDetails`. Delete gives 409 for an employee with direct reports or for your own account; an admin can't remove their own Admin role.
+- Manager changes are checked by the pure `ManagerAssignmentRules` (manager exists, isn't the employee, isn't in their subtree).
+- JSON dictionary keys are camelCased globally (`DictionaryKeyPolicy`) so data-annotation errors also use `email`, not `Email`.
+
+The Development seeder (`DevelopmentDataSeeder`) creates 15 employees under one CEO, Margaret Hayes, adds the admin Grace Turner under her (a separate step, so existing DBs get her too), then the roles, then an account for every employee without one. Every seeded account's password is `DevelopmentDataSeeder.DevelopmentPassword`; emails are `first.last@example.com` (e.g. `grace.turner@example.com` is the Admin, `margaret.hayes@example.com` a Manager, `ethan.clarke@example.com` an Employee). Each step is skipped if its data exists, so an existing dev DB gets accounts on the next run.
 
 ### Front end
 
-`src/app` is split into `core/` (singletons, e.g. `ApiService`), `shared/`, and `features/`. `ApiService` prefixes requests with `environment.apiUrl` — `http://localhost:5062/api` in development (direct call, relies on API CORS), `/api` in production. `ApiService.get(path, params?)` takes optional query params; `ApiService.post(path, body)` posts JSON. Uses `inject()` rather than constructor injection.
+`src/app` is split into `core/` (singletons, e.g. `ApiService`), `shared/`, and `features/`. `ApiService` prefixes requests with `environment.apiUrl` — `http://localhost:5062/api` in development (direct call, relies on API CORS), `/api` in production. `ApiService.get(path, params?)` takes optional query params; `post`/`put(path, body)` send JSON, and `delete(path)`. Uses `inject()` rather than constructor injection.
 
 Auth (`core/auth/`):
 - `AuthService` holds the session (`LoginResult`) in a signal, persisted to `localStorage`; `currentUser` is a signal and `accessToken()` returns null (and signs out) once the token has expired.
 - `authInterceptor` adds `Authorization: Bearer` to requests under `environment.apiUrl` only. On a 401 for a request that carried a token, it signs out and navigates to `/login?returnUrl=...`.
-- `authGuard` protects routes; add `canActivate: [authGuard]` to every new feature route.
+- `authGuard` protects routes; add `canActivate: [authGuard]` to every new feature route. Admin-only routes add `adminGuard` (non-admins go to `/org-chart`).
 - The router uses `withComponentInputBinding()`, so query/route params bind to component `input()`s (e.g. `Login.returnUrl`).
 
 Conventions:
@@ -114,6 +120,7 @@ Conventions:
 
 Features:
 - `features/login/` (route `/login`) is a reactive-forms sign-in page. It only follows in-app `returnUrl`s (starting with a single `/`). The `App` header shows the user's name, role and a Sign out button when signed in.
+- `features/employees/` (route `/employees`, Admins only, linked from the header nav) lists employees in a table with Add/Edit/Delete. `EmployeeForm` is a reactive form in a native `<dialog>` that shows the API's 400 errors under their fields; the password field only appears on create.
 - `features/org-chart/` (route `/org-chart`, which is also the default route) draws the org chart top-down.
   - `OrgChart` is the page. It handles the loading, error-with-retry and empty states, and starts the horizontally scrolling chart centred on the top of the tree.
   - `OrgChartBranch` is a recursive component that renders one card plus its reports. Each card collapses or expands its team.
