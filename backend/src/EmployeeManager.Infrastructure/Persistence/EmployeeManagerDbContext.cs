@@ -11,6 +11,8 @@ namespace EmployeeManager.Infrastructure.Persistence;
 public class EmployeeManagerDbContext(DbContextOptions<EmployeeManagerDbContext> options)
     : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>(options), IApplicationDbContext
 {
+    public const string CaseInsensitiveCollation = "case_insensitive";
+
     public DbSet<Employee> Employees => Set<Employee>();
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
@@ -36,6 +38,14 @@ public class EmployeeManagerDbContext(DbContextOptions<EmployeeManagerDbContext>
     {
         // Identity's mapping goes first so our configurations can extend it (e.g. ApplicationUser's employee link).
         base.OnModelCreating(modelBuilder);
+
+        // Compares text ignoring case (and nothing else), e.g. so unique emails are unique regardless of case.
+        modelBuilder.HasCollation(
+            CaseInsensitiveCollation,
+            locale: "und-u-ks-level2",
+            provider: "icu",
+            deterministic: false);
+
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(EmployeeManagerDbContext).Assembly);
     }
 }
