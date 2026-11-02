@@ -14,6 +14,10 @@ export class EmployeesService {
     return this.api.get<Employee[]>('employees');
   }
 
+  get(id: string): Observable<Employee> {
+    return this.api.get<Employee>(`employees/${encodeURIComponent(id)}`);
+  }
+
   /** Creates the employee and their sign-in account. */
   create(employee: EmployeeCreate): Observable<Employee> {
     return this.api.post<Employee>('employees', employee);

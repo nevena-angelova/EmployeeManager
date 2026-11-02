@@ -1,14 +1,15 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, inject, signal } from '@angular/core';
+import { Component, ElementRef, effect, inject, signal, viewChild } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
+import { RouterLink } from '@angular/router';
 
 import { EmployeeForm } from './employee-form/employee-form';
 import { Employee } from './employee.model';
 import { EmployeesService } from './employees.service';
 
-/** Admin page to add, edit and delete employees. */
+/** Admin page that lists employees, adds and deletes them, and links to each profile for editing. */
 @Component({
-  imports: [EmployeeForm],
+  imports: [EmployeeForm, RouterLink],
   selector: 'app-employees',
   styleUrl: './employees.scss',
   templateUrl: './employees.html',
@@ -18,23 +19,42 @@ export class Employees {
 
   protected readonly employees = rxResource({ stream: () => this.employeesService.list() });
 
-  /** The open form: `{ employee: null }` adds one, `{ employee }` edits it. */
-  protected readonly form = signal<{ employee: Employee | null } | null>(null);
+  /** Whether the Add employee dialog is open. */
+  protected readonly adding = signal(false);
   protected readonly deletingId = signal<string | null>(null);
   protected readonly deleteError = signal<string | null>(null);
 
+  private readonly addDialog = viewChild<ElementRef<HTMLDialogElement>>('addDialog');
+
+  constructor() {
+    // Open the dialog as a modal once it has been rendered.
+    effect(() => {
+      const dialog = this.addDialog()?.nativeElement;
+      if (!dialog || dialog.open) {
+        return;
+      }
+      // jsdom may not implement showModal.
+      if (typeof dialog.showModal === 'function') {
+        dialog.showModal();
+      } else {
+        dialog.setAttribute('open', '');
+      }
+    });
+  }
+
   protected add(): void {
     this.deleteError.set(null);
-    this.form.set({ employee: null });
+    this.adding.set(true);
   }
 
-  protected edit(employee: Employee): void {
-    this.deleteError.set(null);
-    this.form.set({ employee });
+  protected closeAdd(event?: Event): void {
+    // Escape fires `cancel`; close through the page state so the dialog and the page stay in step.
+    event?.preventDefault();
+    this.adding.set(false);
   }
 
-  protected onSaved(): void {
-    this.form.set(null);
+  protected onAdded(): void {
+    this.adding.set(false);
     this.employees.reload();
   }
 

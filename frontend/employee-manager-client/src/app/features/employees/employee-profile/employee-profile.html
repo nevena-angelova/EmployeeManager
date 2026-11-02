@@ -1,0 +1,110 @@
+<section class="page">
+  <a class="back" routerLink="/employees">← All employees</a>
+
+  @if (employee.error()) {
+    @if (notFound()) {
+      <p class="status" role="alert">This employee doesn't exist or has been deleted.</p>
+    } @else {
+      <div class="status error" role="alert">
+        <p>The employee couldn't be loaded.</p>
+        <button type="button" class="primary" (click)="employee.reload()">Retry</button>
+      </div>
+    }
+  } @else if (employee.isLoading() && !employee.hasValue()) {
+    <p class="status" aria-live="polite">Loading employee…</p>
+  } @else if (employee.value(); as person) {
+    <div class="page-intro">
+      <div class="identity">
+        <span class="avatar" aria-hidden="true"
+          >{{ person.firstName[0] }}{{ person.lastName[0] }}</span
+        >
+        <div>
+          <p class="eyebrow"><span></span> Employee profile</p>
+          <h2>{{ person.firstName }} {{ person.lastName }}</h2>
+          <p class="job-title">{{ person.jobTitle }}</p>
+        </div>
+      </div>
+      @if (!editing()) {
+        <button
+          type="button"
+          class="primary"
+          (click)="editing.set(true)"
+          [disabled]="!employees.hasValue()"
+        >
+          Edit
+        </button>
+      }
+    </div>
+
+    @if (editing()) {
+      <section class="card" aria-labelledby="edit-title">
+        <h3 id="edit-title">Edit details</h3>
+        <app-employee-form
+          [employee]="person"
+          [employees]="employees.value() ?? []"
+          (saved)="onSaved($event)"
+          (cancelled)="editing.set(false)"
+        />
+      </section>
+    } @else {
+      <section class="card" aria-labelledby="details-title">
+        <h3 id="details-title">Details</h3>
+        <dl class="details">
+          <div>
+            <dt>Email</dt>
+            <dd>
+              <a [href]="'mailto:' + person.email">{{ person.email }}</a>
+            </dd>
+          </div>
+          <div>
+            <dt>Job title</dt>
+            <dd>{{ person.jobTitle }}</dd>
+          </div>
+          <div>
+            <dt>Role</dt>
+            <dd>
+              <span [class]="'role role-' + person.role.toLowerCase()">{{ person.role }}</span>
+            </dd>
+          </div>
+          <div>
+            <dt>Manager</dt>
+            <dd>
+              @if (person.managerId) {
+                <a [routerLink]="['/employees', person.managerId]">{{ person.managerName }}</a>
+              } @else {
+                None (top level)
+              }
+            </dd>
+          </div>
+          <div>
+            <dt>Hire date</dt>
+            <!-- The date has no time zone, so format it as UTC to avoid shifting it a day. -->
+            <dd>{{ person.hireDate | date: 'longDate' : 'UTC' }}</dd>
+          </div>
+        </dl>
+      </section>
+    }
+
+    <section class="card" aria-labelledby="reports-title">
+      <h3 id="reports-title">Direct reports</h3>
+      @if (employees.error()) {
+        <p class="muted">The direct reports couldn't be loaded.</p>
+      } @else if (!employees.hasValue()) {
+        <p class="muted">Loading…</p>
+      } @else if (directReports().length) {
+        <ul class="reports">
+          @for (report of directReports(); track report.id) {
+            <li>
+              <a [routerLink]="['/employees', report.id]"
+                >{{ report.firstName }} {{ report.lastName }}</a
+              >
+              <span class="muted">{{ report.jobTitle }}</span>
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="muted">No direct reports.</p>
+      }
+    </section>
+  }
+</section>

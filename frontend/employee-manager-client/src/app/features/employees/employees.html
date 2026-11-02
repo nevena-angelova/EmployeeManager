@@ -45,13 +45,12 @@
                 }}</span>
               </td>
               <td class="actions">
-                <button
-                  type="button"
-                  (click)="edit(employee)"
-                  [attr.aria-label]="'Edit ' + employee.firstName + ' ' + employee.lastName"
+                <a
+                  class="button"
+                  [routerLink]="['/employees', employee.id]"
+                  [attr.aria-label]="'View ' + employee.firstName + ' ' + employee.lastName"
+                  >View profile</a
                 >
-                  Edit
-                </button>
                 <button
                   type="button"
                   class="danger"
@@ -72,11 +71,18 @@
   }
 </section>
 
-@if (form(); as open) {
-  <app-employee-form
-    [employee]="open.employee"
-    [employees]="employees.value() ?? []"
-    (saved)="onSaved()"
-    (cancelled)="form.set(null)"
-  />
+@if (adding()) {
+  <dialog
+    #addDialog
+    class="dialog"
+    aria-labelledby="add-employee-title"
+    (cancel)="closeAdd($event)"
+  >
+    <h2 id="add-employee-title">Add employee</h2>
+    <app-employee-form
+      [employees]="employees.value() ?? []"
+      (saved)="onAdded()"
+      (cancelled)="closeAdd()"
+    />
+  </dialog>
 }

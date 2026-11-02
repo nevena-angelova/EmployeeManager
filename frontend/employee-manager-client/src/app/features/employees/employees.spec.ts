@@ -1,5 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { Observable, of, throwError } from 'rxjs';
 
 import { Employee } from './employee.model';
@@ -44,7 +45,7 @@ describe('Employees', () => {
     service = { list: vi.fn(list), delete: vi.fn(remove) };
     TestBed.configureTestingModule({
       imports: [Employees],
-      providers: [{ provide: EmployeesService, useValue: service }],
+      providers: [provideRouter([]), { provide: EmployeesService, useValue: service }],
     });
     fixture = TestBed.createComponent(Employees);
     await fixture.whenStable();
@@ -95,25 +96,30 @@ describe('Employees', () => {
     expect(element.querySelector('tbody .name')?.textContent?.trim()).toBe('Margaret Hayes');
   });
 
-  it('opens the form to add an employee', async () => {
+  it('opens the add form in a dialog and closes it on cancel', async () => {
     const element = await render(() => of([margaret]));
 
     button(element, 'Add employee').click();
     await fixture.whenStable();
 
-    expect(element.querySelector('app-employee-form h2')?.textContent).toContain('Add employee');
-  });
+    const dialog = element.querySelector('dialog');
+    expect(dialog?.open).toBe(true);
+    expect(dialog?.querySelector('h2')?.textContent).toContain('Add employee');
+    expect(dialog?.querySelector('#password')).not.toBeNull();
 
-  it('opens the form to edit an employee', async () => {
-    const element = await render(() => of([margaret]));
-
-    button(element, 'Edit Margaret Hayes').click();
+    button(element, 'Cancel').click();
     await fixture.whenStable();
 
-    expect(element.querySelector('app-employee-form h2')?.textContent).toContain('Edit employee');
-    expect(element.querySelector<HTMLInputElement>('app-employee-form #email')?.value).toBe(
-      'margaret.hayes@example.com',
-    );
+    expect(element.querySelector('dialog')).toBeNull();
+  });
+
+  it('links each row to the employee profile instead of an edit button', async () => {
+    const element = await render(() => of([margaret]));
+
+    const link = element.querySelector<HTMLAnchorElement>('a[aria-label="View Margaret Hayes"]');
+    expect(link?.textContent?.trim()).toBe('View profile');
+    expect(link?.getAttribute('href')).toBe('/employees/1');
+    expect(button(element, 'Edit Margaret Hayes')).toBeUndefined();
   });
 
   it('deletes after confirming and reloads the list', async () => {

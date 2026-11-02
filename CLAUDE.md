@@ -120,7 +120,8 @@ Conventions:
 
 Features:
 - `features/login/` (route `/login`) is a reactive-forms sign-in page. It only follows in-app `returnUrl`s (starting with a single `/`). The `App` header shows the user's name, role and a Sign out button when signed in.
-- `features/employees/` (route `/employees`, Admins only, linked from the header nav) lists employees in a table with Add/Edit/Delete. `EmployeeForm` is a reactive form in a native `<dialog>` that shows the API's 400 errors under their fields; the password field only appears on create.
+- `features/employees/` (route `/employees`, Admins only, linked from the header nav) lists employees in a table with Add, View profile and Delete. Add opens `EmployeeForm` in a native `<dialog>` owned by the page. `EmployeeForm` is a plain reactive form (no dialog, no heading of its own) that shows the API's 400 errors under their fields; the password field only appears on create.
+- `features/employees/employee-profile/` (route `/employees/:id`, Admins only) is an employee's profile: details, a link to their manager, and their direct reports. Its Edit button swaps the details for an inline `EmployeeForm`; there's no edit popup.
 - `features/org-chart/` (route `/org-chart`, which is also the default route) draws the org chart top-down.
   - `OrgChart` is the page. It handles the loading, error-with-retry and empty states, and starts the horizontally scrolling chart centred on the top of the tree.
   - `OrgChartBranch` is a recursive component that renders one card plus its reports. Each card collapses or expands its team.
