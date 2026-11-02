@@ -315,6 +315,20 @@ input {
   }
 }
 
+// The month's sum of daily time entries, under the planned hours.
+.logged {
+  display: block;
+  margin-top: 4px;
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.total-logged .other {
+  margin-left: 0.5em;
+}
+
 .over-label {
   color: var(--color-danger);
   font-size: 0.75rem;
@@ -432,6 +446,11 @@ input {
   letter-spacing: -0.02em;
 }
 
+.mine-logged {
+  color: var(--color-muted);
+  font-weight: 600;
+}
+
 .mine-state {
   margin-left: auto;
   font-weight: 600;
@@ -462,6 +481,17 @@ input {
 
   tbody .hours {
     font-weight: 700;
+  }
+
+  .logged-hours {
+    color: var(--color-muted);
+  }
+
+  // Logged more than was planned: not an error, but worth a look.
+  .logged-hours.ahead {
+    color: var(--color-ink);
+    text-decoration: underline dotted var(--color-danger);
+    text-underline-offset: 3px;
   }
 
   tfoot th,

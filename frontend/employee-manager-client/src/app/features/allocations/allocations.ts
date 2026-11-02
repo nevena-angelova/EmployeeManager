@@ -84,6 +84,16 @@ export class Allocations {
       ]),
     );
   });
+  /** Each report's logged hours this month, on every project. */
+  protected readonly loggedTotals = computed(
+    () =>
+      new Map(
+        (this.team.value()?.members ?? []).map((member) => [
+          member.employeeId,
+          member.logged.reduce((total, h) => total + h.hours, 0) + member.otherLoggedHours,
+        ]),
+      ),
+  );
   /** Each report's month as a coloured bar, following the form as you type. */
   protected readonly teamRails = computed(() => {
     const team = this.team.value();
@@ -201,6 +211,11 @@ export class Allocations {
       return 'Enter hours in steps of 0.5, from 0 up.';
     }
     return this.rowErrors().get(member.employeeId.toLowerCase()) ?? null;
+  }
+
+  /** The report's logged hours on a project this month (0 if none). */
+  protected logged(member: TeamMemberHours, projectId: string): number {
+    return member.logged.find((h) => h.projectId === projectId)?.hours ?? 0;
   }
 
   protected isMember(member: TeamMemberHours, projectId: string): boolean {

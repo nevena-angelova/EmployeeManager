@@ -44,11 +44,20 @@ public class AllocationService(IApplicationDbContext db, TimeProvider timeProvid
             .Select(a => new { a.EmployeeId, a.ProjectId, a.Hours, IsOwn = a.Project!.OwnerId == managerId })
             .ToListAsync(cancellationToken);
 
+        var nextMonth = month.AddMonths(1);
+        var logged = await db.TimeEntries
+            .AsNoTracking()
+            .Where(e => e.Date >= month && e.Date < nextMonth && e.Employee!.ManagerId == managerId)
+            .GroupBy(e => new { e.EmployeeId, e.ProjectId, IsOwn = e.Project!.OwnerId == managerId })
+            .Select(g => new { g.Key.EmployeeId, g.Key.ProjectId, g.Key.IsOwn, Hours = g.Sum(e => e.Hours) })
+            .ToListAsync(cancellationToken);
+
         var projectOrder = projects.Select((p, index) => (p.Id, index)).ToDictionary(p => p.Id, p => p.index);
         var members = reports
             .Select(r =>
             {
                 var own = allocations.Where(a => a.EmployeeId == r.Id && a.IsOwn).ToList();
+                var ownLogged = logged.Where(e => e.EmployeeId == r.Id && e.IsOwn).ToList();
                 return new TeamMemberAllocationDto(
                     r.Id,
                     r.FirstName,
@@ -59,7 +68,9 @@ public class AllocationService(IApplicationDbContext db, TimeProvider timeProvid
                         .OrderBy(id => projectOrder[id])
                         .ToList(),
                     own.OrderBy(a => projectOrder[a.ProjectId]).Select(a => new ProjectHoursDto(a.ProjectId, a.Hours)).ToList(),
-                    allocations.Where(a => a.EmployeeId == r.Id && !a.IsOwn).Sum(a => a.Hours));
+                    allocations.Where(a => a.EmployeeId == r.Id && !a.IsOwn).Sum(a => a.Hours),
+                    ownLogged.OrderBy(e => projectOrder[e.ProjectId]).Select(e => new ProjectHoursDto(e.ProjectId, e.Hours)).ToList(),
+                    logged.Where(e => e.EmployeeId == r.Id && !e.IsOwn).Sum(e => e.Hours));
             })
             .ToList();
 
@@ -175,10 +186,13 @@ public class AllocationService(IApplicationDbContext db, TimeProvider timeProvid
         Guid employeeId,
         CancellationToken cancellationToken = default)
     {
+        var nextMonth = month.AddMonths(1);
         var projects = await db.Projects
             .AsNoTracking()
             .Where(p => p.Members.Any(m => m.EmployeeId == employeeId)
-                || db.HourAllocations.Any(a => a.ProjectId == p.Id && a.EmployeeId == employeeId && a.Month == month))
+                || db.HourAllocations.Any(a => a.ProjectId == p.Id && a.EmployeeId == employeeId && a.Month == month)
+                || db.TimeEntries.Any(e =>
+                    e.ProjectId == p.Id && e.EmployeeId == employeeId && e.Date >= month && e.Date < nextMonth))
             .OrderBy(p => p.Name)
             .Select(p => new MyProjectHoursDto(
                 p.Id,
@@ -186,13 +200,17 @@ public class AllocationService(IApplicationDbContext db, TimeProvider timeProvid
                 p.Owner!.FirstName + " " + p.Owner.LastName,
                 db.HourAllocations
                     .Where(a => a.ProjectId == p.Id && a.EmployeeId == employeeId && a.Month == month)
-                    .Sum(a => (decimal?)a.Hours) ?? 0))
+                    .Sum(a => (decimal?)a.Hours) ?? 0,
+                db.TimeEntries
+                    .Where(e => e.ProjectId == p.Id && e.EmployeeId == employeeId && e.Date >= month && e.Date < nextMonth)
+                    .Sum(e => (decimal?)e.Hours) ?? 0))
             .ToListAsync(cancellationToken);
 
         return new MyAllocationsDto(
             AllocationMonth.Format(month),
             AllocationMonth.CapacityHours(month),
             projects,
-            projects.Sum(p => p.Hours));
+            projects.Sum(p => p.Hours),
+            projects.Sum(p => p.LoggedHours));
     }
 }
