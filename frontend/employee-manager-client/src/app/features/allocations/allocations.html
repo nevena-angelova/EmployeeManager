@@ -12,9 +12,13 @@
       </p>
     </div>
     <nav class="month-nav" aria-label="Month">
-      <button type="button" class="step" (click)="previous()" aria-label="Previous month">‹</button>
+      <button type="button" class="step" (click)="previous()" aria-label="Previous month">
+        <span aria-hidden="true">‹</span>
+      </button>
       <span class="month-label" aria-live="polite">{{ label() }}</span>
-      <button type="button" class="step" (click)="next()" aria-label="Next month">›</button>
+      <button type="button" class="step" (click)="next()" aria-label="Next month">
+        <span aria-hidden="true">›</span>
+      </button>
     </nav>
   </div>
 
@@ -52,8 +56,10 @@
                 <thead>
                   <tr>
                     <th scope="col" class="person">Direct report</th>
-                    @for (project of current.projects; track project.id) {
-                      <th scope="col" class="hours">{{ project.name }}</th>
+                    @for (project of current.projects; track project.id; let i = $index) {
+                      <th scope="col" class="project" [style.--project]="projectColour(i).edge">
+                        <span class="chip" aria-hidden="true"></span>{{ project.name }}
+                      </th>
                     }
                     <th scope="col" class="total">
                       Total <span class="capacity">/ {{ format(current.capacityHours) }} h</span>
@@ -65,45 +71,56 @@
                     @let error = rowError(member);
                     <tr [class.has-error]="!!error">
                       <th scope="row" class="person">
-                        <span
-                          class="stop"
-                          [style.--line]="colour(member.employeeId)"
-                          aria-hidden="true"
-                        ></span>
-                        <span class="person-text">
-                          <span class="member-name"
-                            >{{ member.firstName }} {{ member.lastName }}</span
-                          >
-                          <span class="muted">{{ member.jobTitle }}</span>
-                        </span>
+                        <div class="person-cell">
+                          <span
+                            class="stop"
+                            [style.--line]="colour(member.employeeId)"
+                            aria-hidden="true"
+                          ></span>
+                          <span class="person-text">
+                            <span class="member-name"
+                              >{{ member.firstName }} {{ member.lastName }}</span
+                            >
+                            <span class="muted">{{ member.jobTitle }}</span>
+                          </span>
+                        </div>
                       </th>
-                      @for (project of current.projects; track project.id) {
-                        <td class="hours">
+                      @for (project of current.projects; track project.id; let i = $index) {
+                        <td
+                          class="hours"
+                          [style.--project]="projectColour(i).edge"
+                          [style.--project-tint]="projectColour(i).tint"
+                        >
                           @if (control(member.employeeId, project.id); as cell) {
-                            <input
-                              type="number"
-                              min="0"
-                              step="0.5"
-                              inputmode="decimal"
-                              [formControl]="cell"
-                              [class.former]="!isMember(member, project.id)"
-                              [attr.aria-invalid]="cell.invalid || null"
-                              [attr.aria-label]="
-                                member.firstName +
-                                ' ' +
-                                member.lastName +
-                                ', ' +
-                                project.name +
-                                ', hours'
-                              "
-                              [title]="
-                                isMember(member, project.id)
-                                  ? ''
-                                  : 'No longer on this project: set to 0 to remove these hours'
-                              "
-                            />
+                            <span class="block" [class.former]="!isMember(member, project.id)">
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.5"
+                                inputmode="decimal"
+                                [formControl]="cell"
+                                [class.former]="!isMember(member, project.id)"
+                                [attr.aria-invalid]="cell.invalid || null"
+                                [attr.aria-label]="
+                                  member.firstName +
+                                  ' ' +
+                                  member.lastName +
+                                  ', ' +
+                                  project.name +
+                                  ', hours'
+                                "
+                                [title]="
+                                  isMember(member, project.id)
+                                    ? ''
+                                    : 'No longer on this project: set to 0 to remove these hours'
+                                "
+                              />
+                              <span class="unit" aria-hidden="true">h</span>
+                            </span>
                           } @else {
-                            <span class="none" title="Not on this project">—</span>
+                            <span class="slot"
+                              ><span class="none" title="Not on this project">—</span></span
+                            >
                           }
                         </td>
                       }
@@ -112,15 +129,36 @@
                         [class.over]="isOver(current, member)"
                         [title]="totalTitle(member)"
                       >
-                        <span class="total-value">{{
-                          format(totals().get(member.employeeId) ?? 0)
-                        }}</span>
-                        @if (member.otherHours) {
-                          <span class="other">incl. {{ format(member.otherHours) }} elsewhere</span>
+                        @if (teamRails().get(member.employeeId); as rail) {
+                          <ng-container
+                            *ngTemplateOutlet="railTemplate; context: { $implicit: rail }"
+                          />
                         }
-                        @if (isOver(current, member)) {
-                          <span class="over-label">Over capacity</span>
-                        }
+                        <span class="total-line">
+                          <span class="total-figure"
+                            ><span class="total-value">{{
+                              format(totals().get(member.employeeId) ?? 0)
+                            }}</span>
+                            <span class="capacity"
+                              >/ {{ format(current.capacityHours) }} h</span
+                            ></span
+                          >
+                          @if (isOver(current, member)) {
+                            <span class="over-label"
+                              >Over capacity by
+                              {{
+                                format(
+                                  (totals().get(member.employeeId) ?? 0) - current.capacityHours
+                                )
+                              }}
+                              h</span
+                            >
+                          } @else if (member.otherHours) {
+                            <span class="other"
+                              >incl. {{ format(member.otherHours) }} h elsewhere</span
+                            >
+                          }
+                        </span>
                       </td>
                     </tr>
                     @if (error) {
@@ -169,6 +207,24 @@
       <p class="status" aria-live="polite">Loading hours…</p>
     } @else if (mine.value(); as current) {
       @if (current.projects.length) {
+        @if (mineRail(); as rail) {
+          <div class="mine-rail">
+            <ng-container *ngTemplateOutlet="railTemplate; context: { $implicit: rail }" />
+            <p class="mine-summary" [class.over]="rail.isOver">
+              <span class="mine-total">{{ format(current.totalHours) }} h</span>
+              <span class="muted">of {{ format(current.capacityHours) }} h in {{ label() }}</span>
+              @if (rail.isOver) {
+                <span class="mine-state over-label"
+                  >Over capacity by {{ format(current.totalHours - current.capacityHours) }} h</span
+                >
+              } @else {
+                <span class="mine-state"
+                  >{{ format(current.capacityHours - current.totalHours) }} h free</span
+                >
+              }
+            </p>
+          </div>
+        }
         <table class="mine">
           <thead>
             <tr>
@@ -178,9 +234,12 @@
             </tr>
           </thead>
           <tbody>
-            @for (project of current.projects; track project.projectId) {
-              <tr>
-                <td class="project-name">{{ project.projectName }}</td>
+            @for (project of current.projects; track project.projectId; let i = $index) {
+              <tr [style.--project]="projectColour(i).edge">
+                <td>
+                  <span class="chip" aria-hidden="true"></span
+                  ><span class="project-name">{{ project.projectName }}</span>
+                </td>
                 <td class="muted">{{ project.ownerName }}</td>
                 <td class="hours">{{ format(project.hours) }}</td>
               </tr>
@@ -205,3 +264,29 @@
     }
   </section>
 </section>
+
+<ng-template #railTemplate let-rail>
+  <span class="rail" [class.over]="rail.isOver" role="img" [attr.aria-label]="rail.description">
+    @for (segment of rail.segments; track segment.key) {
+      <span
+        class="segment"
+        [style.width.%]="segment.percent"
+        [style.--project]="segment.colour"
+        [title]="segment.label + ': ' + format(segment.hours) + ' h'"
+      ></span>
+    }
+    @if (rail.elsewherePercent) {
+      <span
+        class="segment elsewhere"
+        [style.width.%]="rail.elsewherePercent"
+        title="On other managers’ projects"
+      ></span>
+    }
+    @if (rail.freePercent) {
+      <span class="free" [style.width.%]="rail.freePercent"></span>
+    }
+    @if (rail.isOver) {
+      <span class="capacity-mark" [style.left.%]="rail.capacityPercent"></span>
+    }
+  </span>
+</ng-template>

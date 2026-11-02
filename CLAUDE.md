@@ -135,6 +135,7 @@ Conventions:
 - Specs sit next to their files. The app is zoneless, so specs use `await fixture.whenStable()` and `componentRef.setInput()`. Use `provideHttpClientTesting()` for services, and a stubbed service for pages.
 - Colours are CSS custom properties (`--color-*`, `--line-0`…`--line-4`, `--shadow-dialog`) defined in `styles.scss`. Use those tokens instead of hard-coded colours. The type is Overpass (Google Fonts, linked in `index.html`).
 - The visual language is a transit map: each team (everyone under someone who reports to a top-level manager) has a line colour. `shared/team-lines.ts` (`teamLines`/`lineColour`) assigns them, and both the org chart and the Employees table use it so the colours agree. Set `--line` on an element and its children pick it up.
+- Projects on the Hours page have their own colours (`--project-0`…`--project-5` with `-tint` pairs, via `projectColour` in `features/allocations/hour-rail.ts`), separate from the team `--line-*`s. Hours are drawn as tinted blocks and as capacity rails (`hourRail`).
 - The app is light-only (`color-scheme: light`) and deliberately ignores the system dark mode.
 
 Features:

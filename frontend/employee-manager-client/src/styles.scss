@@ -17,6 +17,21 @@
   --line-3: #3557d4;
   --line-4: #8a4ba8;
 
+  // Project colours for hour blocks and rails on the Hours page: a strong edge and a pale tint each, kept
+  // apart from the team lines by form (filled blocks, not ring stops). Index 0–5, repeating.
+  --project-0: #d9573f;
+  --project-0-tint: #fbe4de;
+  --project-1: #13897f;
+  --project-1-tint: #d8f0ec;
+  --project-2: #c98a12;
+  --project-2-tint: #f9edd2;
+  --project-3: #4a5fd6;
+  --project-3-tint: #e2e6fb;
+  --project-4: #9150ad;
+  --project-4-tint: #f0e4f5;
+  --project-5: #5f8a2a;
+  --project-5-tint: #e6efd8;
+
   --shadow-dialog: 0 18px 48px rgb(31 39 51 / 22%);
 }
 

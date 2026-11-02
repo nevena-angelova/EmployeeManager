@@ -9,6 +9,7 @@ import {
   ValidationErrors,
 } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { NgTemplateOutlet } from '@angular/common';
 
 import { AuthService } from '../../core/auth/auth.service';
 import { lineColour, teamLines } from '../../shared/team-lines';
@@ -16,6 +17,7 @@ import { OrgChartService } from '../org-chart/org-chart.service';
 import { flattenOrgChart } from '../projects/org-chart-people';
 import { AllocationSave, TeamAllocations, TeamMemberHours } from './allocation.model';
 import { AllocationsService } from './allocations.service';
+import { hourRail, HourRail, projectColour } from './hour-rail';
 import { currentMonth, isMonth, monthLabel, nextMonth, previousMonth } from './month';
 
 /** One report's hours, keyed by project id. */
@@ -29,7 +31,7 @@ type TeamValues = Record<string, Record<string, number | null>>;
  * projects in a grid. The month comes from the `?month=` query param (default: the current UTC month).
  */
 @Component({
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [NgTemplateOutlet, ReactiveFormsModule, RouterLink],
   selector: 'app-allocations',
   styleUrl: './allocations.scss',
   templateUrl: './allocations.html',
@@ -82,6 +84,43 @@ export class Allocations {
       ]),
     );
   });
+  /** Each report's month as a coloured bar, following the form as you type. */
+  protected readonly teamRails = computed(() => {
+    const team = this.team.value();
+    const values = this.values();
+    return new Map<string, HourRail>(
+      (team?.members ?? []).map((member) => [
+        member.employeeId,
+        hourRail(
+          (team?.projects ?? []).map((project, index) => ({
+            key: project.id,
+            label: project.name,
+            hours: Math.max(values[member.employeeId]?.[project.id] ?? 0, 0),
+            colour: projectColour(index).edge,
+          })),
+          member.otherHours,
+          team?.capacityHours ?? 0,
+        ),
+      ]),
+    );
+  });
+  /** Your own month as a coloured bar. */
+  protected readonly mineRail = computed(() => {
+    const mine = this.mine.value();
+    return mine
+      ? hourRail(
+          mine.projects.map((project, index) => ({
+            key: project.projectId,
+            label: project.projectName,
+            hours: project.hours,
+            colour: projectColour(index).edge,
+          })),
+          0,
+          mine.capacityHours,
+        )
+      : null;
+  });
+
   protected readonly dirty = computed(() => {
     const values = this.values();
     const initial = initialValues(this.team.value());
@@ -136,6 +175,11 @@ export class Allocations {
   /** The input for a cell, or null where the report isn't on the project ("—"). */
   protected control(employeeId: string, projectId: string): FormControl<number | null> | null {
     return this.form().controls[employeeId]?.controls[projectId] ?? null;
+  }
+
+  /** The colours for the project at `index` in its list. */
+  protected projectColour(index: number): { edge: string; tint: string } {
+    return projectColour(index);
   }
 
   protected isOver(team: TeamAllocations, member: TeamMemberHours): boolean {
