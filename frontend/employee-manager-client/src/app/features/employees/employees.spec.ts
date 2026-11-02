@@ -107,7 +107,7 @@ describe('Employees', () => {
   it('opens the form to edit an employee', async () => {
     const element = await render(() => of([margaret]));
 
-    button(element, 'Edit Margaret Hayes').click();
+    button(element, 'Details Margaret Hayes').click();
     await fixture.whenStable();
 
     expect(element.querySelector('app-employee-form h2')?.textContent).toContain('Edit employee');
