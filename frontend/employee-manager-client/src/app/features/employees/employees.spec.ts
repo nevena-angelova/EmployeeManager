@@ -106,7 +106,6 @@ describe('Employees', () => {
     expect(dialog?.open).toBe(true);
     expect(dialog?.querySelector('h2')?.textContent).toContain('Add employee');
     expect(dialog?.querySelector('#password')).not.toBeNull();
-
     button(element, 'Cancel').click();
     await fixture.whenStable();
 
