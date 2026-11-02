@@ -71,6 +71,7 @@ public class ProjectsController(IProjectService projectService, IAuthService aut
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<ProjectDto>> Create(SaveProjectRequest request, CancellationToken cancellationToken)
     {
         if (await this.GetCurrentEmployeeIdAsync(authService, cancellationToken) is not { } currentEmployeeId)
@@ -95,6 +96,7 @@ public class ProjectsController(IProjectService projectService, IAuthService aut
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<ProjectDto>> Update(
         Guid id,
         SaveProjectRequest request,

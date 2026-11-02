@@ -155,7 +155,11 @@ export class ProjectForm implements OnInit {
       this.error.set(
         error instanceof HttpErrorResponse && error.status === 404
           ? 'This project no longer exists.'
-          : "Couldn't save the project. Please try again.",
+          : error instanceof HttpErrorResponse &&
+              error.status === 409 &&
+              typeof error.error?.detail === 'string'
+            ? error.error.detail
+            : "Couldn't save the project. Please try again.",
       );
       return;
     }

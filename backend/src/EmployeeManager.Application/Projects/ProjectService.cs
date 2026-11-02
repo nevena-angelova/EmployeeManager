@@ -9,6 +9,9 @@ public class ProjectService(IApplicationDbContext db) : IProjectService
 {
     private const string DuplicateNameError = "You already have a project with this name.";
 
+    private const string ConcurrentChangeError =
+        "The project or its members changed while you were saving. Reload the project and try again.";
+
     public Task<IReadOnlyList<ProjectSummaryDto>> ListManagedAsync(
         Guid currentEmployeeId,
         CancellationToken cancellationToken = default) =>
@@ -187,8 +190,10 @@ public class ProjectService(IApplicationDbContext db) : IProjectService
         db.Projects.AnyAsync(p => p.Id != id && p.OwnerId == ownerId && p.Name == name, cancellationToken);
 
     /// <summary>
-    /// Saves, or returns the name error if a project with the same name was saved since <see cref="ValidateAsync"/>
-    /// (which the unique index rejects). Application code can't see Postgres error codes, so it checks the name again.
+    /// Saves, or returns an error if something changed since <see cref="ValidateAsync"/>: the name error if a project
+    /// with the same name was saved (which the unique index rejects), otherwise a conflict. The other failures are
+    /// another save of the same project (a member added twice, or one already removed), or a member or the project
+    /// being deleted. Application code can't see Postgres error codes, so it checks the name again.
     /// </summary>
     private async Task<EmployeeResult?> SaveAsync(Guid? id, string name, Guid ownerId, CancellationToken cancellationToken)
     {
@@ -199,12 +204,9 @@ public class ProjectService(IApplicationDbContext db) : IProjectService
         }
         catch (DbUpdateException)
         {
-            if (await NameTakenAsync(id, name, ownerId, cancellationToken))
-            {
-                return EmployeeResult.Invalid("name", DuplicateNameError);
-            }
-
-            throw;
+            return await NameTakenAsync(id, name, ownerId, cancellationToken)
+                ? EmployeeResult.Invalid("name", DuplicateNameError)
+                : EmployeeResult.Conflict(ConcurrentChangeError);
         }
     }
 }
