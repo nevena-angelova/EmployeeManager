@@ -21,6 +21,20 @@ public class EmployeeManagerDbContext(DbContextOptions<EmployeeManagerDbContext>
     {
         var now = DateTime.UtcNow;
 
+        // Members are rows of their own, so adding or removing one leaves the project unmodified. Count it as a change
+        // to the project, so its UpdatedAt is stamped below.
+        var changedProjectIds = ChangeTracker.Entries<ProjectMember>()
+            .Where(e => e.State is EntityState.Added or EntityState.Deleted)
+            .Select(e => e.Entity.ProjectId)
+            .ToHashSet();
+        foreach (var project in ChangeTracker.Entries<Project>())
+        {
+            if (project.State == EntityState.Unchanged && changedProjectIds.Contains(project.Entity.Id))
+            {
+                project.Property(p => p.UpdatedAt).IsModified = true;
+            }
+        }
+
         foreach (var entry in ChangeTracker.Entries<BaseEntity>())
         {
             if (entry.State == EntityState.Added)

@@ -153,4 +153,16 @@ describe('ProjectForm', () => {
       'Only your direct reports can be added to a project.',
     ]);
   });
+
+  it("shows the API's message when the project changed while saving", async () => {
+    const detail =
+      'The project or its members changed while you were saving. Reload the project and try again.';
+    await render(project, () =>
+      throwError(() => new HttpErrorResponse({ status: 409, error: { detail } })),
+    );
+
+    await submit();
+
+    expect(element.querySelector('.form-error')?.textContent?.trim()).toBe(detail);
+  });
 });

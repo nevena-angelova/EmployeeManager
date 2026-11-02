@@ -17,7 +17,7 @@ docker compose up -d
 # Back end
 dotnet build backend/EmployeeManager.slnx
 dotnet run --project backend/src/EmployeeManager.Api          # http://localhost:5062
-dotnet test backend/EmployeeManager.slnx
+dotnet test backend/EmployeeManager.slnx                      # IntegrationTests need the Postgres above
 dotnet test backend/tests/EmployeeManager.UnitTests --filter "FullyQualifiedName~<TestName>"   # single test
 
 # EF Core migrations (dotnet-ef is pinned in dotnet-tools.json)
@@ -55,8 +55,9 @@ Clean Architecture in `backend/src`, dependencies pointing inward: `Api → Appl
 - **Application** — use cases/DTOs and `IApplicationDbContext` (exposes `DbSet<T>`s + `SaveChangesAsync`). Application code depends on this interface, not on the concrete DbContext.
   - Use cases are grouped by feature folder, e.g. `Employees/OrgChart/` with an `IXxxService` + `XxxService` pair, `XxxDto` records, and pure helper classes.
   - Keep logic in pure static helpers (e.g. `OrgChartBuilder`) so it can be unit-tested without a DB. The UnitTests project only references Domain + Application.
+  - Services that need the DB are tested in `tests/EmployeeManager.IntegrationTests` against the real DbContext. Each test class's `TestDatabase` creates and drops a throwaway `employee_manager_test_*` database on the local server (or `EMPLOYEE_MANAGER_TEST_DB`). Not SQLite: it can't translate some of the projections. `BeforeFirstSave` simulates a concurrent request winning a race.
   - Register services in `AddApplication()`.
-- **Infrastructure** — `EmployeeManagerDbContext` is an `IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>` and implements `IApplicationDbContext`; registered in `AddInfrastructure()`, which also maps the interface to the same scoped context instance. Its `SaveChangesAsync` override stamps `CreatedAt`/`UpdatedAt` (UTC) for every `BaseEntity` — don't set these manually.
+- **Infrastructure** — `EmployeeManagerDbContext` is an `IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>` and implements `IApplicationDbContext`; registered in `AddInfrastructure()`, which also maps the interface to the same scoped context instance. Its `SaveChangesAsync` override stamps `CreatedAt`/`UpdatedAt` (UTC) for every `BaseEntity` — don't set these manually. Adding or removing a `ProjectMember` also counts as an update to its (tracked) project.
 - **Api** — controllers go in `Controllers/`. Every endpoint requires a signed-in user (fallback authorization policy) unless it opts out with `[AllowAnonymous]`. They are thin `[ApiController]`s with primary-constructor injection of Application services, and they declare `[ProducesResponseType]` so the OpenAPI doc is accurate. `Program.cs` reads connection string `ConnectionStrings:EmployeeManagerDb` (throws if missing) and CORS origins from `Cors:AllowedOrigins`. Dev values live in `appsettings.Development.json`; `appsettings.json` leaves them empty.
 
 ### Persistence conventions
@@ -104,6 +105,7 @@ Projects (`ProjectsController` → `ProjectService`, in Application since it onl
 - A `Project` (`Name` unique per owner, case-insensitive; optional `Description`) is owned by the manager who created it, and has `ProjectMember`s. Deleting the owner or a member employee cascades.
 - `GET /api/projects/managed` (`ManagerOnly`) lists your own projects; `GET /api/projects/mine` the ones you're on; `GET /{id}` is 404 unless you own it or are on it.
 - `POST`, `PUT /{id}` (replaces the members) and `DELETE /{id}` are `ManagerOnly` and owner-only (404 for someone else's project). Results reuse `EmployeeResult`.
+- A save that loses a race (a member added twice, or a member or the project deleted meanwhile) gives 409; a duplicate name still gives the 400 name error.
 - New members must be the owner's direct reports (pure `ProjectMemberRules`, errors under `memberIds`). Existing members who moved to another manager stay until removed, and come back with `isDirectReport: false`.
 
 The Development seeder (`DevelopmentDataSeeder`) creates 15 employees under one CEO, Margaret Hayes, adds the admin Grace Turner under her (a separate step, so existing DBs get her too), then the roles, then an account for every employee without one, then a few sample projects. Every seeded account's password is `DevelopmentDataSeeder.DevelopmentPassword`; emails are `first.last@example.com` (e.g. `grace.turner@example.com` is the Admin, `margaret.hayes@example.com` a Manager, `ethan.clarke@example.com` an Employee). Each step is skipped if its data exists, so an existing dev DB gets accounts on the next run.
