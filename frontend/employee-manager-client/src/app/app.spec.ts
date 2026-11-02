@@ -46,16 +46,16 @@ describe('App', () => {
     expect(compiled.querySelector('.role')?.textContent).toBe('Employee');
   });
 
-  it('shows the Org chart link but not Employees to non-admins', async () => {
+  it('shows the Org chart and Projects links but not Employees to non-admins', async () => {
     const compiled = await render(ethan);
     const links = [...compiled.querySelectorAll('.main-nav a')].map((a) => a.textContent?.trim());
-    expect(links).toEqual(['Org chart']);
+    expect(links).toEqual(['Org chart', 'Projects']);
   });
 
   it('shows the Employees link to Admins', async () => {
     const compiled = await render({ ...ethan, role: 'Admin' });
     const links = [...compiled.querySelectorAll('.main-nav a')].map((a) => a.textContent?.trim());
-    expect(links).toEqual(['Org chart', 'Employees']);
+    expect(links).toEqual(['Org chart', 'Projects', 'Employees']);
   });
 
   it('signs out and goes to the login page', async () => {

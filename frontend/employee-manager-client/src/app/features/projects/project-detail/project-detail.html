@@ -1,0 +1,93 @@
+<section class="page">
+  <a class="back" routerLink="/projects">← All projects</a>
+
+  @if (project.error()) {
+    @if (notFound()) {
+      <p class="status" role="alert">This project doesn't exist, or you aren't on it.</p>
+    } @else {
+      <div class="status error" role="alert">
+        <p>The project couldn't be loaded.</p>
+        <button type="button" class="primary" (click)="project.reload()">Retry</button>
+      </div>
+    }
+  } @else if (project.isLoading() && !project.hasValue()) {
+    <p class="status" aria-live="polite">Loading project…</p>
+  } @else if (project.value(); as current) {
+    <div class="page-intro">
+      <div>
+        <p class="eyebrow"><span></span> Project</p>
+        <h2>{{ current.name }}</h2>
+        <p class="owner">Run by {{ current.ownerName }}</p>
+      </div>
+      @if (isOwner() && !editing()) {
+        <div class="intro-actions">
+          <button
+            type="button"
+            class="primary"
+            (click)="editing.set(true)"
+            [disabled]="!orgChart.hasValue()"
+          >
+            Edit
+          </button>
+          <button type="button" class="danger" (click)="delete(current)" [disabled]="deleting()">
+            {{ deleting() ? 'Deleting…' : 'Delete' }}
+          </button>
+        </div>
+      }
+    </div>
+
+    @if (deleteError()) {
+      <p class="banner-error" role="alert">{{ deleteError() }}</p>
+    }
+
+    @if (editing()) {
+      <section class="card" aria-labelledby="edit-title">
+        <h3 id="edit-title">Edit project</h3>
+        <app-project-form
+          [project]="current"
+          [directReports]="directReports()"
+          (saved)="onSaved($event)"
+          (cancelled)="editing.set(false)"
+        />
+      </section>
+    } @else {
+      @if (current.description) {
+        <section class="card" aria-labelledby="about-title">
+          <h3 id="about-title">About</h3>
+          <p class="project-description">{{ current.description }}</p>
+        </section>
+      }
+
+      <section class="card" aria-labelledby="members-title">
+        <h3 id="members-title">Members ({{ current.members.length }})</h3>
+        @if (current.members.length) {
+          <ul class="members">
+            @for (member of current.members; track member.employeeId) {
+              <li>
+                <span
+                  class="stop"
+                  [style.--line]="colour(member.employeeId)"
+                  aria-hidden="true"
+                ></span>
+                <span class="member-name">{{ member.firstName }} {{ member.lastName }}</span>
+                <span class="muted">{{ member.jobTitle }}</span>
+                @if (!member.isDirectReport) {
+                  <span class="tag">
+                    {{ isOwner() ? 'No longer your report' : 'Moved to another team' }}
+                  </span>
+                }
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="muted">
+            Nobody is on this project yet.
+            @if (isOwner()) {
+              Use Edit to add your direct reports.
+            }
+          </p>
+        }
+      </section>
+    }
+  }
+</section>

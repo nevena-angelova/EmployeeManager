@@ -31,4 +31,17 @@ export const routes: Routes = [
         (m) => m.EmployeeProfile,
       ),
   },
+  {
+    path: 'projects',
+    title: 'Projects',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/projects/projects').then((m) => m.Projects),
+  },
+  {
+    path: 'projects/:id',
+    title: 'Project',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/projects/project-detail/project-detail').then((m) => m.ProjectDetail),
+  },
 ];

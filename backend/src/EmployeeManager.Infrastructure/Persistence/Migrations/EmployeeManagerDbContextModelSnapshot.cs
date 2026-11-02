@@ -87,6 +87,83 @@ namespace EmployeeManager.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("EmployeeManager.Domain.Entities.Project", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("description");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)")
+                        .HasColumnName("name")
+                        .UseCollation("case_insensitive");
+
+                    b.Property<Guid>("OwnerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("owner_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_projects");
+
+                    b.HasIndex("OwnerId", "Name")
+                        .IsUnique()
+                        .HasDatabaseName("ix_projects_owner_id_name");
+
+                    b.ToTable("projects", (string)null);
+                });
+
+            modelBuilder.Entity("EmployeeManager.Domain.Entities.ProjectMember", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("EmployeeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("employee_id");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_project_members");
+
+                    b.HasIndex("EmployeeId")
+                        .HasDatabaseName("ix_project_members_employee_id");
+
+                    b.HasIndex("ProjectId", "EmployeeId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_project_members_project_id_employee_id");
+
+                    b.ToTable("project_members", (string)null);
+                });
+
             modelBuilder.Entity("EmployeeManager.Infrastructure.Identity.ApplicationUser", b =>
                 {
                     b.Property<Guid>("Id")
@@ -349,6 +426,39 @@ namespace EmployeeManager.Infrastructure.Persistence.Migrations
                     b.Navigation("Manager");
                 });
 
+            modelBuilder.Entity("EmployeeManager.Domain.Entities.Project", b =>
+                {
+                    b.HasOne("EmployeeManager.Domain.Entities.Employee", "Owner")
+                        .WithMany()
+                        .HasForeignKey("OwnerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_projects_employees_owner_id");
+
+                    b.Navigation("Owner");
+                });
+
+            modelBuilder.Entity("EmployeeManager.Domain.Entities.ProjectMember", b =>
+                {
+                    b.HasOne("EmployeeManager.Domain.Entities.Employee", "Employee")
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_project_members_employees_employee_id");
+
+                    b.HasOne("EmployeeManager.Domain.Entities.Project", "Project")
+                        .WithMany("Members")
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_project_members_projects_project_id");
+
+                    b.Navigation("Employee");
+
+                    b.Navigation("Project");
+                });
+
             modelBuilder.Entity("EmployeeManager.Infrastructure.Identity.ApplicationUser", b =>
                 {
                     b.HasOne("EmployeeManager.Domain.Entities.Employee", "Employee")
@@ -421,6 +531,11 @@ namespace EmployeeManager.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("EmployeeManager.Domain.Entities.Employee", b =>
                 {
                     b.Navigation("DirectReports");
+                });
+
+            modelBuilder.Entity("EmployeeManager.Domain.Entities.Project", b =>
+                {
+                    b.Navigation("Members");
                 });
 #pragma warning restore 612, 618
         }

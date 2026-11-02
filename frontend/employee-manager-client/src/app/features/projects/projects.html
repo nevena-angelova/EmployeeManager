@@ -1,0 +1,92 @@
+<section class="page">
+  <div class="page-intro">
+    <div>
+      <h2>Projects</h2>
+      <p class="description">
+        @if (isManager()) {
+          Start projects and staff them from your direct reports. Below them are the projects you’re
+          on yourself.
+        } @else {
+          The projects you’ve been assigned to.
+        }
+      </p>
+    </div>
+    @if (isManager()) {
+      <button type="button" class="primary" (click)="add()" [disabled]="!directReports.hasValue()">
+        New project
+      </button>
+    }
+  </div>
+
+  @if (isManager()) {
+    <section aria-labelledby="managed-title">
+      <h3 id="managed-title">Projects I manage</h3>
+      @if (managed.error()) {
+        <div class="status error" role="alert">
+          <p>Your projects couldn't be loaded.</p>
+          <button type="button" class="primary" (click)="managed.reload()">Retry</button>
+        </div>
+      } @else if (managed.isLoading() && !managed.hasValue()) {
+        <p class="status" aria-live="polite">Loading projects…</p>
+      } @else if (managed.value()?.length) {
+        <ul class="projects">
+          @for (project of managed.value(); track project.id) {
+            <li>
+              <a class="project-name" [routerLink]="['/projects', project.id]">{{
+                project.name
+              }}</a>
+              @if (project.description) {
+                <p class="project-description">{{ project.description }}</p>
+              }
+              <p class="meta">
+                {{ project.memberCount }} {{ project.memberCount === 1 ? 'member' : 'members' }}
+              </p>
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="status">You don’t run any projects yet. Use New project to start one.</p>
+      }
+    </section>
+  }
+
+  <section aria-labelledby="mine-title">
+    <h3 id="mine-title">Projects I’m on</h3>
+    @if (mine.error()) {
+      <div class="status error" role="alert">
+        <p>Your projects couldn't be loaded.</p>
+        <button type="button" class="primary" (click)="mine.reload()">Retry</button>
+      </div>
+    } @else if (mine.isLoading() && !mine.hasValue()) {
+      <p class="status" aria-live="polite">Loading projects…</p>
+    } @else if (mine.value()?.length) {
+      <ul class="projects">
+        @for (project of mine.value(); track project.id) {
+          <li>
+            <a class="project-name" [routerLink]="['/projects', project.id]">{{ project.name }}</a>
+            @if (project.description) {
+              <p class="project-description">{{ project.description }}</p>
+            }
+            <p class="meta">
+              Run by {{ project.ownerName }} · {{ project.memberCount }}
+              {{ project.memberCount === 1 ? 'member' : 'members' }}
+            </p>
+          </li>
+        }
+      </ul>
+    } @else {
+      <p class="status">You aren’t on any projects yet.</p>
+    }
+  </section>
+</section>
+
+@if (adding()) {
+  <dialog #addDialog class="dialog" aria-labelledby="add-project-title" (cancel)="closeAdd($event)">
+    <h2 id="add-project-title">New project</h2>
+    <app-project-form
+      [directReports]="directReports.value() ?? []"
+      (saved)="onAdded()"
+      (cancelled)="closeAdd()"
+    />
+  </dialog>
+}

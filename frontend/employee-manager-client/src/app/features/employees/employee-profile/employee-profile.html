@@ -78,8 +78,9 @@
           </div>
           <div>
             <dt>Hire date</dt>
-            <!-- The date has no time zone, so format it as UTC to avoid shifting it a day. -->
-            <dd>{{ person.hireDate | date: 'longDate' : 'UTC' }}</dd>
+            <!-- DatePipe reads a `YYYY-MM-DD` string as local midnight, so format it in local time too;
+                 formatting it as UTC would show the day before east of UTC. -->
+            <dd>{{ person.hireDate | date: 'longDate' }}</dd>
           </div>
         </dl>
       </section>

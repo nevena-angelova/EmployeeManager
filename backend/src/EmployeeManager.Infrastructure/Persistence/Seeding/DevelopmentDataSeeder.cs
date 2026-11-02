@@ -8,7 +8,8 @@ using Microsoft.Extensions.DependencyInjection;
 namespace EmployeeManager.Infrastructure.Persistence.Seeding;
 
 /// <summary>
-/// Seeds a sample org chart for local development, plus the roles and a sign-in account for every employee.
+/// Seeds a sample org chart for local development, plus the roles, a sign-in account for every employee and a few
+/// projects.
 /// Each step is skipped if its data already exists.
 /// </summary>
 public static class DevelopmentDataSeeder
@@ -27,6 +28,7 @@ public static class DevelopmentDataSeeder
         await SeedAdminEmployeeAsync(db, cancellationToken);
         await SeedRolesAsync(services.GetRequiredService<RoleManager<IdentityRole<Guid>>>());
         await SeedUsersAsync(db, services.GetRequiredService<UserManager<ApplicationUser>>(), cancellationToken);
+        await SeedProjectsAsync(db, cancellationToken);
     }
 
     private static async Task SeedEmployeesAsync(EmployeeManagerDbContext db, CancellationToken cancellationToken)
@@ -120,6 +122,45 @@ public static class DevelopmentDataSeeder
             var role = employee.Email == AdminEmail ? Roles.Admin : Roles.ForEmployee(employee.HasDirectReports);
             ThrowIfFailed(await userManager.AddToRoleAsync(user, role));
         }
+    }
+
+    /// <summary>Gives a few managers a project staffed from their direct reports. Owners or members missing from the data are left out.</summary>
+    private static async Task SeedProjectsAsync(EmployeeManagerDbContext db, CancellationToken cancellationToken)
+    {
+        if (await db.Projects.AnyAsync(cancellationToken))
+        {
+            return;
+        }
+
+        var employeeIds = await db.Employees.ToDictionaryAsync(e => e.Email, e => e.Id, cancellationToken);
+
+        (string Name, string Description, string Owner, string[] Members)[] projects =
+        [
+            ("Annual planning", "Set next year's goals and budget.", "margaret.hayes", ["daniel.okafor", "sofia.marin"]),
+            ("Payments API", "Move card payments to the new provider.", "lucas.bennett", ["ethan.clarke", "hannah.lindqvist"]),
+            ("Design system refresh", "Update the shared components and colours.", "priya.raman", ["chloe.dubois", "kenji.watanabe"]),
+        ];
+
+        foreach (var (name, description, owner, members) in projects)
+        {
+            if (!employeeIds.TryGetValue($"{owner}@example.com", out var ownerId))
+            {
+                continue;
+            }
+
+            db.Projects.Add(new Project
+            {
+                Name = name,
+                Description = description,
+                OwnerId = ownerId,
+                Members = members
+                    .Where(m => employeeIds.ContainsKey($"{m}@example.com"))
+                    .Select(m => new ProjectMember { EmployeeId = employeeIds[$"{m}@example.com"] })
+                    .ToList(),
+            });
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
     }
 
     private static void ThrowIfFailed(IdentityResult result)

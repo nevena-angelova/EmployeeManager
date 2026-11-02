@@ -1,0 +1,58 @@
+<form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+  <div class="field">
+    <label for="name">Name</label>
+    <input id="name" formControlName="name" autocomplete="off" />
+    @if (fieldError('name'); as message) {
+      <p class="field-error">{{ message }}</p>
+    }
+  </div>
+
+  <div class="field">
+    <label for="description">Description <span class="optional">(optional)</span></label>
+    <textarea id="description" formControlName="description" rows="3"></textarea>
+    @if (fieldError('description'); as message) {
+      <p class="field-error">{{ message }}</p>
+    }
+  </div>
+
+  <fieldset class="field">
+    <legend>Members</legend>
+    @if (options().length) {
+      <ul class="members">
+        @for (option of options(); track option.id) {
+          <li>
+            <label>
+              <input
+                type="checkbox"
+                [checked]="selected().has(option.id)"
+                [disabled]="option.former && !selected().has(option.id)"
+                (change)="toggle(option.id, $any($event.target).checked)"
+              />
+              <span class="member-name">{{ option.name }}</span>
+              <span class="muted">{{ option.jobTitle }}</span>
+              @if (option.former) {
+                <span class="tag">No longer your report</span>
+              }
+            </label>
+          </li>
+        }
+      </ul>
+    } @else {
+      <p class="muted">You have no direct reports to add yet.</p>
+    }
+    @if (fieldError('memberIds'); as message) {
+      <p class="field-error">{{ message }}</p>
+    }
+  </fieldset>
+
+  @if (error()) {
+    <p class="form-error" role="alert">{{ error() }}</p>
+  }
+
+  <div class="actions">
+    <button type="button" class="secondary" (click)="cancel()">Cancel</button>
+    <button type="submit" [disabled]="submitting()">
+      {{ submitting() ? 'Saving…' : isEdit() ? 'Save changes' : 'Create project' }}
+    </button>
+  </div>
+</form>

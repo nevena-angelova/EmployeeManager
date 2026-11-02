@@ -1,6 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, ElementRef, effect, inject, signal, viewChild } from '@angular/core';
-import { computed } from '@angular/core';
+import { Component, ElementRef, computed, effect, inject, signal, viewChild } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 
@@ -43,6 +42,9 @@ export class Employees {
         dialog.setAttribute('open', '');
       }
     });
+  }
+
+  /** The person's team line colour, as on the org chart. */
   protected colour(id: string): string | null {
     return lineColour(this.lines(), id);
   }
