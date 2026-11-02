@@ -1,0 +1,120 @@
+<div class="heading">
+  <h3 id="daily-hours-title">Daily hours</h3>
+  <nav class="day-nav" aria-label="Day">
+    <button type="button" class="step" (click)="previous()" aria-label="Previous day">
+      <span aria-hidden="true">‹</span>
+    </button>
+    <span class="day-label" aria-live="polite">{{ label() }}</span>
+    <button type="button" class="step" (click)="next()" aria-label="Next day">
+      <span aria-hidden="true">›</span>
+    </button>
+    @if (!isToday()) {
+      <button type="button" class="today" (click)="goToToday()">Today</button>
+    }
+  </nav>
+</div>
+
+@if (day.error()) {
+  <div class="status error" role="alert">
+    <p>Your hours couldn't be loaded.</p>
+    <button type="button" class="primary" (click)="day.reload()">Retry</button>
+  </div>
+} @else if (day.isLoading() && !day.hasValue()) {
+  <p class="status" aria-live="polite">Loading hours…</p>
+} @else if (day.value(); as current) {
+  <div class="week">
+    <button type="button" class="step" (click)="previousWeek()" aria-label="Previous week">
+      <span aria-hidden="true">‹</span>
+    </button>
+    <ol class="week-days" aria-label="This week">
+      @for (weekDay of week(); track weekDay.date) {
+        <li>
+          <button
+            type="button"
+            class="week-day"
+            [class.selected]="weekDay.isSelected"
+            [class.missing]="weekDay.isMissing"
+            [class.future]="weekDay.isFuture"
+            [class.is-today]="weekDay.isToday"
+            [attr.aria-current]="weekDay.isSelected ? 'date' : null"
+            [attr.aria-label]="weekDayLabel(weekDay)"
+            (click)="goTo(weekDay.date)"
+          >
+            <span class="weekday">{{ weekDay.weekday }}</span>
+            <span class="date">{{ weekDay.dayOfMonth }}</span>
+            <span class="day-hours">{{
+              weekDay.isFuture ? '' : weekDay.isMissing ? '—' : format(weekDay.hours) + ' h'
+            }}</span>
+          </button>
+        </li>
+      }
+    </ol>
+    <button type="button" class="step" (click)="nextWeek()" aria-label="Next week">
+      <span aria-hidden="true">›</span>
+    </button>
+  </div>
+
+  @if (!current.projects.length) {
+    <p class="status">You aren’t on any projects, so there’s nothing to log hours on.</p>
+  } @else {
+    @if (conflict(); as message) {
+      <div class="banner-error" role="alert">
+        <p>{{ message }}</p>
+        <button type="button" (click)="reload()">Reload</button>
+      </div>
+    }
+    @if (!current.isEditable) {
+      <p class="note">This day hasn’t happened yet, so you can’t log hours on it.</p>
+    }
+    <form [formGroup]="form()" (ngSubmit)="save()" novalidate>
+      <ul class="entries">
+        @for (project of current.projects; track project.projectId; let i = $index) {
+          @if (control(project.projectId); as cell) {
+            <li
+              [style.--project]="projectColour(i).edge"
+              [style.--project-tint]="projectColour(i).tint"
+            >
+              <label class="entry-name" [for]="'hours-' + project.projectId">
+                <span class="project-name">{{ project.projectName }}</span>
+                <span class="owner">Run by {{ project.ownerName }}</span>
+              </label>
+              <span class="block">
+                <input
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  inputmode="decimal"
+                  [id]="'hours-' + project.projectId"
+                  [formControl]="cell"
+                  [attr.aria-invalid]="cell.invalid || null"
+                />
+                <span class="unit" aria-hidden="true">h</span>
+              </span>
+            </li>
+          }
+        }
+      </ul>
+
+      <p class="total" [class.over]="isOver()">
+        <span>Total</span>
+        <span class="total-value">{{ format(total()) }} h</span>
+      </p>
+
+      @if (formError() ?? saveError(); as message) {
+        <p class="form-error" role="alert">{{ message }}</p>
+      }
+
+      @if (current.isEditable) {
+        <div class="actions">
+          @if (saved() && !dirty()) {
+            <span class="saved" role="status">Saved</span>
+          }
+          <button type="button" (click)="reset()" [disabled]="!dirty() || saving()">Reset</button>
+          <button type="submit" class="primary" [disabled]="saving()">
+            {{ saving() ? 'Saving…' : 'Save hours' }}
+          </button>
+        </div>
+      }
+    </form>
+  }
+}

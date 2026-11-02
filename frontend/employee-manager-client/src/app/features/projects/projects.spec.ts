@@ -6,6 +6,8 @@ import { of } from 'rxjs';
 import { CurrentUser } from '../../core/auth/auth.model';
 import { AuthService } from '../../core/auth/auth.service';
 import { OrgChartService } from '../org-chart/org-chart.service';
+import { TimeEntriesService } from './daily-hours/time-entries.service';
+import { DayTimeEntries } from './daily-hours/time-entry.model';
 import { ProjectSummary } from './project.model';
 import { Projects } from './projects';
 import { ProjectsService } from './projects.service';
@@ -37,6 +39,15 @@ const planning: ProjectSummary = {
   memberCount: 1,
 };
 
+const day: DayTimeEntries = {
+  date: '2026-11-02',
+  isEditable: true,
+  maxHours: 24,
+  projects: [],
+  totalHours: 0,
+  week: [],
+};
+
 describe('Projects', () => {
   let service: { listManaged: ReturnType<typeof vi.fn>; listMine: ReturnType<typeof vi.fn> };
 
@@ -48,6 +59,7 @@ describe('Projects', () => {
         provideRouter([]),
         { provide: ProjectsService, useValue: service },
         { provide: OrgChartService, useValue: { getOrgChart: () => of([]) } },
+        { provide: TimeEntriesService, useValue: { getMine: () => of(day) } },
         { provide: AuthService, useValue: { currentUser: signal(user) } },
       ],
     });
@@ -58,7 +70,11 @@ describe('Projects', () => {
 
   function sections(element: HTMLElement): Record<string, string[]> {
     return Object.fromEntries(
-      [...element.querySelectorAll('section[aria-labelledby]')].map((s) => [
+      [
+        ...element.querySelectorAll(
+          'section[aria-labelledby$="mine-title"], section[aria-labelledby="managed-title"]',
+        ),
+      ].map((s) => [
         s.querySelector('h3')!.textContent!.trim(),
         [...s.querySelectorAll('.project-name')].map((a) => a.textContent!.trim()),
       ]),
@@ -73,6 +89,14 @@ describe('Projects', () => {
       'Projects I’m on': ['Annual planning'],
     });
     expect(element.querySelector('button.primary')?.textContent?.trim()).toBe('New project');
+  });
+
+  it('shows everyone their daily hours first', async () => {
+    const element = await render({ ...lucas, role: 'Employee' });
+
+    expect(element.querySelector('section app-daily-hours h3')?.textContent?.trim()).toBe(
+      'Daily hours',
+    );
   });
 
   it('shows an employee only the projects they are on, without New project', async () => {

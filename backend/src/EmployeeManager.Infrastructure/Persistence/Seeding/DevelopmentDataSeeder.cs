@@ -1,5 +1,6 @@
 using EmployeeManager.Application.Allocations;
 using EmployeeManager.Application.Auth;
+using EmployeeManager.Application.TimeEntries;
 using EmployeeManager.Domain.Entities;
 using EmployeeManager.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity;
@@ -10,7 +11,7 @@ namespace EmployeeManager.Infrastructure.Persistence.Seeding;
 
 /// <summary>
 /// Seeds a sample org chart for local development, plus the roles, a sign-in account for every employee and a few
-/// projects with this month's hours.
+/// projects with this month's hours and the hours their members logged on the past five weekdays.
 /// Each step is skipped if its data already exists.
 /// </summary>
 public static class DevelopmentDataSeeder
@@ -31,6 +32,7 @@ public static class DevelopmentDataSeeder
         await SeedUsersAsync(db, services.GetRequiredService<UserManager<ApplicationUser>>(), cancellationToken);
         await SeedProjectsAsync(db, cancellationToken);
         await SeedAllocationsAsync(db, services.GetRequiredService<TimeProvider>(), cancellationToken);
+        await SeedTimeEntriesAsync(db, services.GetRequiredService<TimeProvider>(), cancellationToken);
     }
 
     private static async Task SeedEmployeesAsync(EmployeeManagerDbContext db, CancellationToken cancellationToken)
@@ -191,6 +193,42 @@ public static class DevelopmentDataSeeder
             Month = month,
             Hours = hours[index % hours.Length],
         }));
+
+        await db.SaveChangesAsync(cancellationToken);
+    }
+
+    /// <summary>Logs some hours on each seeded project for its members on the five weekdays before today.</summary>
+    private static async Task SeedTimeEntriesAsync(
+        EmployeeManagerDbContext db,
+        TimeProvider timeProvider,
+        CancellationToken cancellationToken)
+    {
+        if (await db.TimeEntries.AnyAsync(cancellationToken))
+        {
+            return;
+        }
+
+        var today = TimeEntryDay.Today(timeProvider);
+        var days = Enumerable.Range(1, 7)
+            .Select(offset => today.AddDays(-offset))
+            .Where(day => day.DayOfWeek is not (DayOfWeek.Saturday or DayOfWeek.Sunday))
+            .Take(5)
+            .ToList();
+        var members = await db.ProjectMembers
+            .OrderBy(m => m.Project!.Name)
+            .ThenBy(m => m.Employee!.FirstName)
+            .Select(m => new { m.ProjectId, m.EmployeeId })
+            .ToListAsync(cancellationToken);
+
+        // At most 4h per project, so someone on a few projects still fits in a day.
+        decimal[] hours = [4, 3.5m, 2, 4, 1.5m, 3];
+        db.TimeEntries.AddRange(members.SelectMany((m, index) => days.Select((day, dayIndex) => new TimeEntry
+        {
+            ProjectId = m.ProjectId,
+            EmployeeId = m.EmployeeId,
+            Date = day,
+            Hours = hours[(index + dayIndex) % hours.Length],
+        })));
 
         await db.SaveChangesAsync(cancellationToken);
     }

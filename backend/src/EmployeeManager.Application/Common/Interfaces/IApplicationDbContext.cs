@@ -9,6 +9,7 @@ public interface IApplicationDbContext
     DbSet<Project> Projects { get; }
     DbSet<ProjectMember> ProjectMembers { get; }
     DbSet<HourAllocation> HourAllocations { get; }
+    DbSet<TimeEntry> TimeEntries { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
