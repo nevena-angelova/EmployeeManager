@@ -1,10 +1,8 @@
-using System.Security.Claims;
 using EmployeeManager.Application.Auth;
 using EmployeeManager.Application.Employees.Management;
 using EmployeeManager.Application.Employees.OrgChart;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.JsonWebTokens;
 
 namespace EmployeeManager.Api.Controllers;
 
@@ -70,7 +68,7 @@ public class EmployeesController(
         var result = await employeeService.CreateAsync(request, cancellationToken);
         return result.Status == EmployeeResultStatus.Success
             ? CreatedAtAction(nameof(Get), new { id = result.Value!.Id }, result.Value)
-            : ToErrorResponse(result);
+            : this.ToErrorResponse(result);
     }
 
     /// <summary>
@@ -88,13 +86,13 @@ public class EmployeesController(
         UpdateEmployeeRequest request,
         CancellationToken cancellationToken)
     {
-        if (await GetCurrentEmployeeIdAsync(cancellationToken) is not { } currentEmployeeId)
+        if (await this.GetCurrentEmployeeIdAsync(authService, cancellationToken) is not { } currentEmployeeId)
         {
             return Unauthorized();
         }
 
         var result = await employeeService.UpdateAsync(id, request, currentEmployeeId, cancellationToken);
-        return result.Status == EmployeeResultStatus.Success ? Ok(result.Value) : ToErrorResponse(result);
+        return result.Status == EmployeeResultStatus.Success ? Ok(result.Value) : this.ToErrorResponse(result);
     }
 
     /// <summary>
@@ -109,38 +107,12 @@ public class EmployeesController(
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
-        if (await GetCurrentEmployeeIdAsync(cancellationToken) is not { } currentEmployeeId)
+        if (await this.GetCurrentEmployeeIdAsync(authService, cancellationToken) is not { } currentEmployeeId)
         {
             return Unauthorized();
         }
 
         var result = await employeeService.DeleteAsync(id, currentEmployeeId, cancellationToken);
-        return result.Status == EmployeeResultStatus.Success ? NoContent() : ToErrorResponse(result);
-    }
-
-    private async Task<Guid?> GetCurrentEmployeeIdAsync(CancellationToken cancellationToken) =>
-        Guid.TryParse(User.FindFirstValue(JwtRegisteredClaimNames.Sub), out var userId)
-            ? (await authService.GetCurrentUserAsync(userId, cancellationToken))?.EmployeeId
-            : null;
-
-    private ActionResult ToErrorResponse(EmployeeResult result)
-    {
-        switch (result.Status)
-        {
-            case EmployeeResultStatus.NotFound:
-                return NotFound();
-            case EmployeeResultStatus.Conflict:
-                return Problem(detail: result.Detail, statusCode: StatusCodes.Status409Conflict);
-            default:
-                foreach (var (field, messages) in result.Errors)
-                {
-                    foreach (var message in messages)
-                    {
-                        ModelState.AddModelError(field, message);
-                    }
-                }
-
-                return ValidationProblem(ModelState);
-        }
+        return result.Status == EmployeeResultStatus.Success ? NoContent() : this.ToErrorResponse(result);
     }
 }

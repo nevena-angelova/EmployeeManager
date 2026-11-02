@@ -14,6 +14,8 @@ public class EmployeeManagerDbContext(DbContextOptions<EmployeeManagerDbContext>
     public const string CaseInsensitiveCollation = "case_insensitive";
 
     public DbSet<Employee> Employees => Set<Employee>();
+    public DbSet<Project> Projects => Set<Project>();
+    public DbSet<ProjectMember> ProjectMembers => Set<ProjectMember>();
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {

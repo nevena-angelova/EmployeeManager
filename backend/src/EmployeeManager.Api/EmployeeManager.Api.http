@@ -83,3 +83,49 @@ DELETE {{EmployeeManager.Api_HostAddress}}/api/employees/{{employeeId}}
 Authorization: Bearer {{adminToken}}
 
 ###
+
+GET {{EmployeeManager.Api_HostAddress}}/api/projects/managed
+Authorization: Bearer {{token}}
+
+###
+
+GET {{EmployeeManager.Api_HostAddress}}/api/projects/mine
+Authorization: Bearer {{token}}
+
+###
+
+POST {{EmployeeManager.Api_HostAddress}}/api/projects
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Office move",
+  "description": "Plan and run the move to the new office.",
+  "memberIds": []
+}
+
+> {% client.global.set("projectId", response.body.id); %}
+
+###
+
+GET {{EmployeeManager.Api_HostAddress}}/api/projects/{{projectId}}
+Authorization: Bearer {{token}}
+
+###
+
+PUT {{EmployeeManager.Api_HostAddress}}/api/projects/{{projectId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Office move 2027",
+  "description": null,
+  "memberIds": []
+}
+
+###
+
+DELETE {{EmployeeManager.Api_HostAddress}}/api/projects/{{projectId}}
+Authorization: Bearer {{token}}
+
+###

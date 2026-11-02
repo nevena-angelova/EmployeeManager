@@ -69,7 +69,7 @@ ASP.NET Core Identity (Identity Core only, no cookies) stores users and roles; t
 
 - `ApplicationUser` (`Infrastructure/Identity`) is a sign-in account linked 1:1 to an `Employee` via `EmployeeId` (cascade delete). The user name and email are the employee's email.
 - Three roles, defined in `Application/Auth/Roles`: `Employee`, `Manager` and `Admin`. Each user has exactly one. The seeder makes anyone with direct reports a Manager, and `DevelopmentDataSeeder.AdminEmail` an Admin. Roles are stored, not derived, so they don't change by themselves when the hierarchy changes. An admin sets them when creating/editing an employee; the new role is in the token from the user's next sign-in.
-- Role-restricted endpoints use `[Authorize(Policy = AuthorizationPolicies.AdminOnly)]` or `ManagerOnly` (nothing uses `ManagerOnly` yet).
+- Role-restricted endpoints use `[Authorize(Policy = AuthorizationPolicies.AdminOnly)]` or `ManagerOnly` (used by the project write endpoints).
 - Tokens use short claim names (`sub` = user id, `email`, `role`); `MapInboundClaims` is off, so read them with `JwtRegisteredClaimNames` / `JwtOptions.RoleClaimType`.
 - JWT settings live in the `Jwt` section (`Issuer`, `Audience`, `SigningKey`, `ExpiryMinutes`). `SigningKey` is only set in `appsettings.Development.json`; the API refuses to start without a key of 32+ bytes.
 - Identity tables are renamed to snake_case (`users`, `roles`, `user_roles`, ...) in `IdentityTablesConfiguration`/`ApplicationUserConfiguration`, since Identity's explicit table names bypass the naming convention. The base `OnModelCreating` runs before `ApplyConfigurationsFromAssembly`.
@@ -98,7 +98,13 @@ Admin-only employee management (`EmployeesController` → `IEmployeeManagementSe
 - Manager changes are checked by the pure `ManagerAssignmentRules` (manager exists, isn't the employee, isn't in their subtree).
 - JSON dictionary keys are camelCased globally (`DictionaryKeyPolicy`) so data-annotation errors also use `email`, not `Email`.
 
-The Development seeder (`DevelopmentDataSeeder`) creates 15 employees under one CEO, Margaret Hayes, adds the admin Grace Turner under her (a separate step, so existing DBs get her too), then the roles, then an account for every employee without one. Every seeded account's password is `DevelopmentDataSeeder.DevelopmentPassword`; emails are `first.last@example.com` (e.g. `grace.turner@example.com` is the Admin, `margaret.hayes@example.com` a Manager, `ethan.clarke@example.com` an Employee). Each step is skipped if its data exists, so an existing dev DB gets accounts on the next run.
+Projects (`ProjectsController` → `ProjectService`, in Application since it only needs `IApplicationDbContext`; controller helpers shared via `Controllers/ControllerExtensions`):
+- A `Project` (`Name` unique per owner, case-insensitive; optional `Description`) is owned by the manager who created it, and has `ProjectMember`s. Deleting the owner or a member employee cascades.
+- `GET /api/projects/managed` (`ManagerOnly`) lists your own projects; `GET /api/projects/mine` the ones you're on; `GET /{id}` is 404 unless you own it or are on it.
+- `POST`, `PUT /{id}` (replaces the members) and `DELETE /{id}` are `ManagerOnly` and owner-only (404 for someone else's project). Results reuse `EmployeeResult`.
+- New members must be the owner's direct reports (pure `ProjectMemberRules`, errors under `memberIds`). Existing members who moved to another manager stay until removed, and come back with `isDirectReport: false`.
+
+The Development seeder (`DevelopmentDataSeeder`) creates 15 employees under one CEO, Margaret Hayes, adds the admin Grace Turner under her (a separate step, so existing DBs get her too), then the roles, then an account for every employee without one, then a few sample projects. Every seeded account's password is `DevelopmentDataSeeder.DevelopmentPassword`; emails are `first.last@example.com` (e.g. `grace.turner@example.com` is the Admin, `margaret.hayes@example.com` a Manager, `ethan.clarke@example.com` an Employee). Each step is skipped if its data exists, so an existing dev DB gets accounts on the next run.
 
 ### Front end
 
@@ -123,6 +129,7 @@ Features:
 - `features/login/` (route `/login`) is a reactive-forms sign-in page. It only follows in-app `returnUrl`s (starting with a single `/`). The `App` header shows the user's name, role and a Sign out button when signed in.
 - `features/employees/` (route `/employees`, Admins only, linked from the header nav) lists employees in a table with Add, View profile and Delete. Add opens `EmployeeForm` in a native `<dialog>` owned by the page. `EmployeeForm` is a plain reactive form (no dialog, no heading of its own) that shows the API's 400 errors under their fields; the password field only appears on create.
 - `features/employees/employee-profile/` (route `/employees/:id`, Admins only) is an employee's profile: details, a link to their manager, and their direct reports. Its Edit button swaps the details for an inline `EmployeeForm`; there's no edit popup.
+- `features/projects/` (route `/projects`, everyone, linked from the header nav) lists "Projects I manage" (Managers, with a New project dialog) and "Projects I'm on". `project-detail/` (route `/projects/:id`) shows the members with their team colours; the owner gets Edit (inline `ProjectForm`) and Delete. `ProjectForm` offers the signed-in manager's direct reports, taken from the org chart (`org-chart-people.ts`), as member checkboxes.
 - `features/org-chart/` (route `/org-chart`, which is also the default route) draws the org chart top-down.
   - `OrgChart` is the page. It handles the loading, error-with-retry and empty states, and starts the horizontally scrolling chart centred on the top of the tree.
   - `OrgChartBranch` is a recursive component that renders one card plus its reports. Each card collapses or expands its team.

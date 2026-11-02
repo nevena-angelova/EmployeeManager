@@ -6,6 +6,8 @@ namespace EmployeeManager.Application.Common.Interfaces;
 public interface IApplicationDbContext
 {
     DbSet<Employee> Employees { get; }
+    DbSet<Project> Projects { get; }
+    DbSet<ProjectMember> ProjectMembers { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
