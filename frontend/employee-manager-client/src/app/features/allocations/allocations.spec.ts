@@ -163,8 +163,15 @@ describe('Allocations', () => {
     expect(service.getTeam).toHaveBeenCalledWith('2026-11');
     expect(element.querySelector('.month-label')?.textContent?.trim()).toBe('November 2026');
     expect(
-      [...element.querySelectorAll('.grid thead th')].map((th) => th.textContent?.trim()),
+      [...element.querySelectorAll('.grid thead th')].map((th) =>
+        [...th.childNodes]
+          .filter((node) => !(node instanceof Element && node.classList.contains('pair-caption')))
+          .map((node) => node.textContent)
+          .join('')
+          .trim(),
+      ),
     ).toEqual(['Direct report', 'Billing', 'Payments API', 'Total / 168 h']);
+    expect(element.querySelector('.grid thead .pair-caption')?.textContent).toBe('PlannedLogged');
     expect(rows(element)).toEqual([
       ['Ethan Clarke', '80', '40', '136'],
       ['Olivia Reed', '—', '0', '0'],
@@ -253,6 +260,8 @@ describe('Allocations', () => {
     expect(inputs.every((input) => input.disabled)).toBe(true);
     expect(element.querySelector('button[type="submit"]')).toBeNull();
     expect(element.querySelector('.note')?.textContent).toContain('read-only');
+    // Read-only hours keep their blocks rather than turning into bare numbers.
+    expect(inputs.every((input) => input.closest('.block'))).toBe(true);
   });
 
   it('shows empty states for no reports and no projects', async () => {
@@ -279,10 +288,10 @@ describe('Allocations', () => {
 
     const ethan = element.querySelector('.grid tbody tr')!;
     const logged = [...ethan.querySelectorAll('td.hours')].map(
-      (cell) => cell.querySelector('.logged')?.textContent?.trim() ?? null,
+      (cell) => cell.querySelector('.block.logged .value')?.textContent ?? null,
     );
-    expect(logged).toEqual(['22.5 h logged', null]);
-    expect(ethan.querySelector('.total-logged')?.textContent).toContain('26.5 h logged');
+    expect(logged).toEqual(['22.5', '0']);
+    expect(ethan.querySelector('.total-logged .total-value')?.textContent).toBe('26.5');
     expect(ethan.querySelector('.total-logged')?.textContent).toContain('incl. 4 h elsewhere');
 
     const row = element.querySelector('.mine tbody tr')!;

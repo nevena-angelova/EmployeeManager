@@ -134,8 +134,14 @@ thead th {
     font-weight: 400;
   }
 
+  // Fixed width, so a project's name never changes how big its hours look.
+  .project,
+  .hours {
+    width: 12.5em;
+    min-width: 12.5em;
+  }
+
   .project {
-    min-width: 7.5em;
     color: var(--color-ink);
   }
 
@@ -158,6 +164,31 @@ thead th {
 
 .hours {
   text-align: right;
+}
+
+// Planned and logged hours side by side, each in a block of the same size.
+.pair {
+  display: flex;
+  gap: 8px;
+
+  > * {
+    flex: none;
+    width: 5.5em;
+  }
+}
+
+.pair-caption {
+  margin-top: 6px;
+  color: var(--color-muted);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+
+  > * {
+    padding-right: 10px;
+    text-align: right;
+  }
 }
 
 .person-cell {
@@ -218,9 +249,17 @@ thead th {
     box-shadow: 0 0 0 2px var(--color-danger);
   }
 
-  &:has(input:disabled) {
-    background: transparent;
+  // Logged hours: the same block, read-only, told apart by a dashed edge.
+  &.logged {
+    justify-content: flex-end;
+    border-left-style: dashed;
   }
+}
+
+.value {
+  padding: 9px 4px 7px 8px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
 .unit {
@@ -257,6 +296,7 @@ input {
   &:disabled {
     color: var(--color-ink);
     opacity: 1;
+    cursor: default;
   }
 }
 
@@ -313,20 +353,6 @@ input {
   .capacity {
     color: inherit;
   }
-}
-
-// The month's sum of daily time entries, under the planned hours.
-.logged {
-  display: block;
-  margin-top: 4px;
-  color: var(--color-muted);
-  font-size: 0.75rem;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
-.total-logged .other {
-  margin-left: 0.5em;
 }
 
 .over-label {
@@ -481,10 +507,6 @@ input {
 
   tbody .hours {
     font-weight: 700;
-  }
-
-  .logged-hours {
-    color: var(--color-muted);
   }
 
   // Logged more than was planned: not an error, but worth a look.
