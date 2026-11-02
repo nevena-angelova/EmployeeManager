@@ -39,6 +39,8 @@ npm test -- --include <path/to/file.spec.ts>   # single spec file
 npx prettier --write <changed files>        # formatting (.prettierrc); no ESLint configured
 ```
 
+CI (`.github/workflows/ci.yml`, on pushes and PRs to `main`) runs the back-end build + tests against a `postgres:18` service container and the front-end `npm ci`, build and tests.
+
 Health check (includes DB connectivity, anonymous): `GET http://localhost:5062/api/health`. OpenAPI document is mapped only in Development.
 
 Gotchas:
