@@ -4,10 +4,11 @@
       <h2>Hours</h2>
       <p class="description">
         @if (isManager()) {
-          Plan how many hours each of your direct reports spends on your projects each month. Below
-          that are your own hours.
+          Plan how many hours each of your direct reports spends on your projects each month, next
+          to the hours they’ve logged. Below that are your own hours.
         } @else {
-          How many hours you’re allocated to each of your projects this month.
+          How many hours you’re allocated to each of your projects this month, and how many you’ve
+          logged.
         }
       </p>
     </div>
@@ -122,6 +123,11 @@
                               ><span class="none" title="Not on this project">—</span></span
                             >
                           }
+                          @if (logged(member, project.id); as loggedHours) {
+                            <span class="logged" title="Sum of this month’s daily hours"
+                              >{{ format(loggedHours) }} h logged</span
+                            >
+                          }
                         </td>
                       }
                       <td
@@ -156,6 +162,14 @@
                           } @else if (member.otherHours) {
                             <span class="other"
                               >incl. {{ format(member.otherHours) }} h elsewhere</span
+                            >
+                          }
+                        </span>
+                        <span class="logged total-logged">
+                          {{ format(loggedTotals().get(member.employeeId) ?? 0) }} h logged
+                          @if (member.otherLoggedHours) {
+                            <span class="other"
+                              >incl. {{ format(member.otherLoggedHours) }} h elsewhere</span
                             >
                           }
                         </span>
@@ -213,6 +227,7 @@
             <p class="mine-summary" [class.over]="rail.isOver">
               <span class="mine-total">{{ format(current.totalHours) }} h</span>
               <span class="muted">of {{ format(current.capacityHours) }} h in {{ label() }}</span>
+              <span class="mine-logged">{{ format(current.totalLoggedHours) }} h logged</span>
               @if (rail.isOver) {
                 <span class="mine-state over-label"
                   >Over capacity by {{ format(current.totalHours - current.capacityHours) }} h</span
@@ -230,7 +245,8 @@
             <tr>
               <th scope="col">Project</th>
               <th scope="col">Run by</th>
-              <th scope="col" class="hours">Hours</th>
+              <th scope="col" class="hours">Allocated</th>
+              <th scope="col" class="hours">Logged</th>
             </tr>
           </thead>
           <tbody>
@@ -242,6 +258,15 @@
                 </td>
                 <td class="muted">{{ project.ownerName }}</td>
                 <td class="hours">{{ format(project.hours) }}</td>
+                <td
+                  class="hours logged-hours"
+                  [class.ahead]="project.loggedHours > project.hours"
+                  [title]="
+                    project.loggedHours > project.hours ? 'More than allocated this month' : ''
+                  "
+                >
+                  {{ format(project.loggedHours) }}
+                </td>
               </tr>
             }
           </tbody>
@@ -251,6 +276,12 @@
               <td class="hours">
                 {{ format(current.totalHours) }}
                 <span class="capacity">/ {{ format(current.capacityHours) }} h</span>
+              </td>
+              <td
+                class="hours logged-hours"
+                [class.ahead]="current.totalLoggedHours > current.totalHours"
+              >
+                {{ format(current.totalLoggedHours) }} h
               </td>
             </tr>
           </tfoot>

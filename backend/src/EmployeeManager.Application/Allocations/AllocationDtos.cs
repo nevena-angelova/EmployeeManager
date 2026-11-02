@@ -21,6 +21,11 @@ public sealed record AllocationProjectDto(Guid Id, string Name);
 /// </param>
 /// <param name="Hours">Their hours on the manager's projects; projects without hours are left out.</param>
 /// <param name="OtherHours">Their hours on other managers' projects, which count towards the month's capacity.</param>
+/// <param name="Logged">
+/// The hours they logged in the month's daily time entries on the manager's projects; projects without entries are
+/// left out.
+/// </param>
+/// <param name="OtherLoggedHours">The hours they logged in the month on other managers' projects.</param>
 public sealed record TeamMemberAllocationDto(
     Guid EmployeeId,
     string FirstName,
@@ -28,19 +33,33 @@ public sealed record TeamMemberAllocationDto(
     string JobTitle,
     IReadOnlyList<Guid> ProjectIds,
     IReadOnlyList<ProjectHoursDto> Hours,
-    decimal OtherHours);
+    decimal OtherHours,
+    IReadOnlyList<ProjectHoursDto> Logged,
+    decimal OtherLoggedHours);
 
 public sealed record ProjectHoursDto(Guid ProjectId, decimal Hours);
 
 /// <summary>The signed-in employee's hours for one month.</summary>
-/// <param name="Projects">The projects they're on or have hours on in the month, sorted by name.</param>
+/// <param name="Projects">
+/// The projects they're on, or have allocated or logged hours on in the month, sorted by name.
+/// </param>
+/// <param name="TotalHours">The month's allocated hours.</param>
+/// <param name="TotalLoggedHours">The month's hours from their daily time entries.</param>
 public sealed record MyAllocationsDto(
     string Month,
     decimal CapacityHours,
     IReadOnlyList<MyProjectHoursDto> Projects,
-    decimal TotalHours);
+    decimal TotalHours,
+    decimal TotalLoggedHours);
 
-public sealed record MyProjectHoursDto(Guid ProjectId, string ProjectName, string OwnerName, decimal Hours);
+/// <param name="Hours">The hours their manager allocated them on the project in the month.</param>
+/// <param name="LoggedHours">The sum of their daily time entries on the project in the month.</param>
+public sealed record MyProjectHoursDto(
+    Guid ProjectId,
+    string ProjectName,
+    string OwnerName,
+    decimal Hours,
+    decimal LoggedHours);
 
 /// <summary>
 /// Replaces a month's allocations for the manager's direct reports on the manager's projects. Anything left out, or

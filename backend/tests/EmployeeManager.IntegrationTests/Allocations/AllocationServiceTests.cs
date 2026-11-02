@@ -163,6 +163,70 @@ public sealed class AllocationServiceTests : IDisposable
             mine.Projects.Select(p => (p.ProjectName, p.OwnerName, p.Hours)));
     }
 
+    [Fact]
+    public async Task GetMineAsync_ReturnsTheMonthsLoggedHours()
+    {
+        var delta = NewProject("Delta", otherManager);
+        await using (var setup = database.CreateContext())
+        {
+            setup.Projects.Add(delta);
+            await setup.SaveChangesAsync();
+        }
+
+        await AddHoursAsync((report, alpha, 40));
+        await AddEntriesAsync(
+            (report, alpha, new DateOnly(2026, 11, 2), 6),
+            (report, alpha, new DateOnly(2026, 11, 30), 2.5m),
+            (report, alpha, new DateOnly(2026, 10, 30), 8),
+            // Not on Delta, but logged time on it this month.
+            (report, delta, new DateOnly(2026, 11, 3), 1));
+
+        await using var context = database.CreateContext();
+        var mine = await NewService(context).GetMineAsync(November, report.Id);
+
+        Assert.Equal(
+            [("Alpha", 40m, 8.5m), ("Beta", 0m, 0m), ("Delta", 0m, 1m), ("Gamma", 0m, 0m)],
+            mine.Projects.Select(p => (p.ProjectName, p.Hours, p.LoggedHours)));
+        Assert.Equal(40, mine.TotalHours);
+        Assert.Equal(9.5m, mine.TotalLoggedHours);
+    }
+
+    [Fact]
+    public async Task GetTeamAsync_ReturnsLoggedHours()
+    {
+        await AddEntriesAsync(
+            (report, beta, new DateOnly(2026, 11, 2), 4),
+            (report, alpha, new DateOnly(2026, 11, 2), 3),
+            (report, alpha, new DateOnly(2026, 11, 3), 3),
+            (report, gamma, new DateOnly(2026, 11, 4), 2),
+            (report, alpha, new DateOnly(2026, 12, 1), 7),
+            (stranger, gamma, new DateOnly(2026, 11, 4), 5));
+
+        await using var context = database.CreateContext();
+        var team = await NewService(context).GetTeamAsync(November, manager.Id);
+
+        var rachel = team.Members.Single(m => m.EmployeeId == report.Id);
+        Assert.Equal([new ProjectHoursDto(alpha.Id, 6), new ProjectHoursDto(beta.Id, 4)], rachel.Logged);
+        Assert.Equal(2, rachel.OtherLoggedHours);
+
+        var oscar = team.Members.Single(m => m.EmployeeId == otherReport.Id);
+        Assert.Empty(oscar.Logged);
+        Assert.Equal(0, oscar.OtherLoggedHours);
+    }
+
+    private async Task AddEntriesAsync(params (Employee Employee, Project Project, DateOnly Date, decimal Hours)[] entries)
+    {
+        await using var context = database.CreateContext();
+        context.TimeEntries.AddRange(entries.Select(e => new TimeEntry
+        {
+            EmployeeId = e.Employee.Id,
+            ProjectId = e.Project.Id,
+            Date = e.Date,
+            Hours = e.Hours,
+        }));
+        await context.SaveChangesAsync();
+    }
+
     private Task AddHoursAsync(params (Employee Employee, Project Project, decimal Hours)[] hours) =>
         AddHoursAsync(November, hours);
 

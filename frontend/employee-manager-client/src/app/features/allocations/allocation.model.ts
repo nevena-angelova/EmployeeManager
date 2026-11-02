@@ -21,6 +21,10 @@ export interface TeamMemberHours {
   hours: ProjectHours[];
   /** Hours on other managers' projects this month: they count toward the cap but can't be edited here. */
   otherHours: number;
+  /** The month's sum of the report's daily time entries on the manager's projects; projects without any are left out. */
+  logged: ProjectHours[];
+  /** Hours the report logged this month on other managers' projects. */
+  otherLoggedHours: number;
 }
 
 /** A manager's allocations for their direct reports in one month. */
@@ -53,7 +57,10 @@ export interface MyProjectHours {
   projectId: string;
   projectName: string;
   ownerName: string;
+  /** Allocated by their manager for the month. */
   hours: number;
+  /** The month's sum of their daily time entries on the project. */
+  loggedHours: number;
 }
 
 /** The signed-in employee's own hours in one month. */
@@ -63,4 +70,5 @@ export interface MyAllocations {
   capacityHours: number;
   projects: MyProjectHours[];
   totalHours: number;
+  totalLoggedHours: number;
 }

@@ -41,6 +41,8 @@ const team: TeamAllocations = {
         { projectId: 'p2', hours: 40 },
       ],
       otherHours: 16,
+      logged: [{ projectId: 'p1', hours: 22.5 }],
+      otherLoggedHours: 4,
     },
     {
       employeeId: 'e2',
@@ -50,6 +52,8 @@ const team: TeamAllocations = {
       projectIds: ['p2'],
       hours: [],
       otherHours: 0,
+      logged: [],
+      otherLoggedHours: 0,
     },
   ],
 };
@@ -58,9 +62,16 @@ const mine: MyAllocations = {
   month: '2026-11',
   capacityHours: 168,
   projects: [
-    { projectId: 'p9', projectName: 'Annual planning', ownerName: 'Margaret Hayes', hours: 12 },
+    {
+      projectId: 'p9',
+      projectName: 'Annual planning',
+      ownerName: 'Margaret Hayes',
+      hours: 12,
+      loggedHours: 14.5,
+    },
   ],
   totalHours: 12,
+  totalLoggedHours: 14.5,
 };
 
 const chart: OrgChartNode[] = [
@@ -261,6 +272,25 @@ describe('Allocations', () => {
     expect(element.querySelector('.mine .project-name')?.textContent).toBe('Annual planning');
     expect(element.querySelector('.mine tfoot')?.textContent).toContain('12');
     expect(element.querySelector('.mine tfoot')?.textContent).toContain('/ 168 h');
+  });
+
+  it('shows the logged hours next to the allocated ones', async () => {
+    const element = await render(lucas);
+
+    const ethan = element.querySelector('.grid tbody tr')!;
+    const logged = [...ethan.querySelectorAll('td.hours')].map(
+      (cell) => cell.querySelector('.logged')?.textContent?.trim() ?? null,
+    );
+    expect(logged).toEqual(['22.5 h logged', null]);
+    expect(ethan.querySelector('.total-logged')?.textContent).toContain('26.5 h logged');
+    expect(ethan.querySelector('.total-logged')?.textContent).toContain('incl. 4 h elsewhere');
+
+    const row = element.querySelector('.mine tbody tr')!;
+    const logCell = row.querySelector('.logged-hours')!;
+    expect(logCell.textContent?.trim()).toBe('14.5');
+    expect(logCell.classList).toContain('ahead');
+    expect(element.querySelector('.mine tfoot .logged-hours')?.textContent).toContain('14.5 h');
+    expect(element.querySelector('.mine-logged')?.textContent).toContain('14.5 h logged');
   });
 
   it('navigates to the previous and next month', async () => {
