@@ -22,4 +22,13 @@ export const routes: Routes = [
     canActivate: [authGuard, adminGuard],
     loadComponent: () => import('./features/employees/employees').then((m) => m.Employees),
   },
+  {
+    path: 'employees/:id',
+    title: 'Employee profile',
+    canActivate: [authGuard, adminGuard],
+    loadComponent: () =>
+      import('./features/employees/employee-profile/employee-profile').then(
+        (m) => m.EmployeeProfile,
+      ),
+  },
 ];

@@ -112,7 +112,6 @@ describe('EmployeeForm', () => {
   it('edits an employee without a password field', async () => {
     await render(ethan);
 
-    expect(element.querySelector('h2')?.textContent).toContain('Edit employee');
     expect(field('password')).toBeNull();
     expect(field('email').value).toBe('ethan.clarke@example.com');
     expect(field<HTMLSelectElement>('managerId').value).toBe('1');

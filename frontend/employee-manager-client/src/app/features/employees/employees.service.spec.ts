@@ -42,6 +42,14 @@ describe('EmployeesService', () => {
     expect(result).toEqual([]);
   });
 
+  it('gets one employee', () => {
+    service.get('1').subscribe();
+
+    const req = http.expectOne(`${environment.apiUrl}/employees/1`);
+    expect(req.request.method).toBe('GET');
+    req.flush({ ...body, id: '1' });
+  });
+
   it('creates an employee', () => {
     service.create(body).subscribe();
 

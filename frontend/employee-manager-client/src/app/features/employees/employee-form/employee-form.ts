@@ -1,16 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import {
-  Component,
-  ElementRef,
-  OnInit,
-  afterNextRender,
-  computed,
-  inject,
-  input,
-  output,
-  signal,
-  viewChild,
-} from '@angular/core';
+import { Component, OnInit, computed, inject, input, output, signal } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Observable } from 'rxjs';
 
@@ -41,7 +30,10 @@ const requiredMessages: Partial<Record<FieldName, string>> = {
   password: 'Enter a password.',
 };
 
-/** Modal form that creates an employee (with their sign-in account) or edits one. */
+/**
+ * Form that creates an employee (with their sign-in account) or edits one.
+ * The host supplies the heading: the Employees page shows it in its Add dialog, the profile page inline.
+ */
 @Component({
   imports: [ReactiveFormsModule],
   selector: 'app-employee-form',
@@ -50,7 +42,6 @@ const requiredMessages: Partial<Record<FieldName, string>> = {
 })
 export class EmployeeForm implements OnInit {
   private readonly employeesService = inject(EmployeesService);
-  private readonly dialog = viewChild.required<ElementRef<HTMLDialogElement>>('dialog');
 
   /** The employee being edited, or null to create one. */
   readonly employee = input<Employee | null>(null);
@@ -80,18 +71,6 @@ export class EmployeeForm implements OnInit {
   protected readonly submitting = signal(false);
   protected readonly serverErrors = signal<Partial<Record<FieldName, string>>>({});
   protected readonly error = signal<string | null>(null);
-
-  constructor() {
-    afterNextRender(() => {
-      const dialog = this.dialog().nativeElement;
-      // jsdom may not implement showModal.
-      if (typeof dialog.showModal === 'function') {
-        dialog.showModal();
-      } else {
-        dialog.setAttribute('open', '');
-      }
-    });
-  }
 
   ngOnInit(): void {
     const employee = this.employee();
@@ -130,7 +109,7 @@ export class EmployeeForm implements OnInit {
 
     request.subscribe({
       next: (result) => {
-        this.close();
+        this.submitting.set(false);
         this.saved.emit(result);
       },
       error: (error: unknown) => {
@@ -140,15 +119,8 @@ export class EmployeeForm implements OnInit {
     });
   }
 
-  protected cancel(event?: Event): void {
-    // Escape fires `cancel`; close through the page so the dialog and the page state stay in step.
-    event?.preventDefault();
-    this.close();
+  protected cancel(): void {
     this.cancelled.emit();
-  }
-
-  private close(): void {
-    this.dialog().nativeElement.close?.();
   }
 
   /** Puts 400 validation errors under their fields; anything else becomes a form-level message. */
