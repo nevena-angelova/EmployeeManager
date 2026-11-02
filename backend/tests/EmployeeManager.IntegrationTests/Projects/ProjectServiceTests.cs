@@ -91,10 +91,37 @@ public sealed class ProjectServiceTests : IDisposable
         Assert.Contains("name", result.Errors.Keys);
     }
 
+    [Fact]
+    public async Task UpdateAsync_RemovingAMember_RemovesTheirHoursFromThisMonthOn()
+    {
+        var project = await CreateProjectAsync([report.Id, otherReport.Id]);
+        await using (var context = database.CreateContext())
+        {
+            DateOnly[] months = [new(2026, 10, 1), new(2026, 11, 1), new(2026, 12, 1)];
+            context.HourAllocations.AddRange(months.Select(month =>
+                new HourAllocation { ProjectId = project.Id, EmployeeId = report.Id, Month = month, Hours = 10 }));
+            context.HourAllocations.Add(
+                new HourAllocation { ProjectId = project.Id, EmployeeId = otherReport.Id, Month = months[1], Hours = 10 });
+            await context.SaveChangesAsync();
+        }
+
+        await UpdateAsync(project.Id, [otherReport.Id]);
+
+        await using var check = database.CreateContext();
+        var left = await check.HourAllocations
+            .OrderBy(a => a.Month)
+            .Select(a => new { a.EmployeeId, a.Month })
+            .ToListAsync();
+        Assert.Collection(
+            left,
+            a => Assert.Equal((report.Id, new DateOnly(2026, 10, 1)), (a.EmployeeId, a.Month)),
+            a => Assert.Equal((otherReport.Id, new DateOnly(2026, 11, 1)), (a.EmployeeId, a.Month)));
+    }
+
     private async Task<ProjectDto> CreateProjectAsync(IReadOnlyList<Guid> memberIds)
     {
         await using var context = database.CreateContext();
-        var result = await new ProjectService(context).CreateAsync(
+        var result = await new ProjectService(context, FixedTimeProvider.MidNovember2026).CreateAsync(
             new SaveProjectRequest("Payroll", null, memberIds),
             owner.Id);
         Assert.Equal(EmployeeResultStatus.Success, result.Status);
@@ -110,7 +137,7 @@ public sealed class ProjectServiceTests : IDisposable
         await using var context = beforeSave is null
             ? database.CreateContext()
             : database.CreateContext(new BeforeFirstSave(beforeSave));
-        return await new ProjectService(context).UpdateAsync(id, new SaveProjectRequest(name, null, memberIds), owner.Id);
+        return await new ProjectService(context, FixedTimeProvider.MidNovember2026).UpdateAsync(id, new SaveProjectRequest(name, null, memberIds), owner.Id);
     }
 
     private async Task<DateTime?> GetUpdatedAtAsync(Guid projectId)

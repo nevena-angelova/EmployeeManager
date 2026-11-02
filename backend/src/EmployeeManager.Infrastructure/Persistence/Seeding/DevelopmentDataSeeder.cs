@@ -1,3 +1,4 @@
+using EmployeeManager.Application.Allocations;
 using EmployeeManager.Application.Auth;
 using EmployeeManager.Domain.Entities;
 using EmployeeManager.Infrastructure.Identity;
@@ -9,7 +10,7 @@ namespace EmployeeManager.Infrastructure.Persistence.Seeding;
 
 /// <summary>
 /// Seeds a sample org chart for local development, plus the roles, a sign-in account for every employee and a few
-/// projects.
+/// projects with this month's hours.
 /// Each step is skipped if its data already exists.
 /// </summary>
 public static class DevelopmentDataSeeder
@@ -29,6 +30,7 @@ public static class DevelopmentDataSeeder
         await SeedRolesAsync(services.GetRequiredService<RoleManager<IdentityRole<Guid>>>());
         await SeedUsersAsync(db, services.GetRequiredService<UserManager<ApplicationUser>>(), cancellationToken);
         await SeedProjectsAsync(db, cancellationToken);
+        await SeedAllocationsAsync(db, services.GetRequiredService<TimeProvider>(), cancellationToken);
     }
 
     private static async Task SeedEmployeesAsync(EmployeeManagerDbContext db, CancellationToken cancellationToken)
@@ -159,6 +161,36 @@ public static class DevelopmentDataSeeder
                     .ToList(),
             });
         }
+
+        await db.SaveChangesAsync(cancellationToken);
+    }
+
+    /// <summary>Gives every seeded project member some hours on it this month.</summary>
+    private static async Task SeedAllocationsAsync(
+        EmployeeManagerDbContext db,
+        TimeProvider timeProvider,
+        CancellationToken cancellationToken)
+    {
+        if (await db.HourAllocations.AnyAsync(cancellationToken))
+        {
+            return;
+        }
+
+        var month = AllocationMonth.Current(timeProvider);
+        var members = await db.ProjectMembers
+            .OrderBy(m => m.Project!.Name)
+            .ThenBy(m => m.Employee!.FirstName)
+            .Select(m => new { m.ProjectId, m.EmployeeId })
+            .ToListAsync(cancellationToken);
+
+        decimal[] hours = [80, 60, 120, 40.5m];
+        db.HourAllocations.AddRange(members.Select((m, index) => new HourAllocation
+        {
+            ProjectId = m.ProjectId,
+            EmployeeId = m.EmployeeId,
+            Month = month,
+            Hours = hours[index % hours.Length],
+        }));
 
         await db.SaveChangesAsync(cancellationToken);
     }
