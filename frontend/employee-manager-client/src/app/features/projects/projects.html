@@ -4,10 +4,11 @@
       <h2>Projects</h2>
       <p class="description">
         @if (isManager()) {
-          Start projects and staff them from your direct reports. Below them are the projects you’re
-          on yourself.
+          Log the hours you spent on your projects each day, start projects and staff them from your
+          direct reports, and see the projects you’re on yourself.
         } @else {
-          The projects you’ve been assigned to.
+          Log the hours you spent on each of your projects every day, and see the projects you’ve
+          been assigned to.
         }
       </p>
     </div>
@@ -17,6 +18,10 @@
       </button>
     }
   </div>
+
+  <section aria-labelledby="daily-hours-title">
+    <app-daily-hours [date]="date()" />
+  </section>
 
   @if (isManager()) {
     <section aria-labelledby="managed-title">

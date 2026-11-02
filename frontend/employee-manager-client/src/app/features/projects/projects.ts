@@ -1,17 +1,30 @@
-import { Component, ElementRef, computed, effect, inject, signal, viewChild } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  computed,
+  effect,
+  inject,
+  input,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { map } from 'rxjs';
 
 import { AuthService } from '../../core/auth/auth.service';
 import { OrgChartService } from '../org-chart/org-chart.service';
+import { DailyHours } from './daily-hours/daily-hours';
 import { directReportsOf } from './org-chart-people';
 import { ProjectForm } from './project-form/project-form';
 import { ProjectsService } from './projects.service';
 
-/** Lists the projects the signed-in user is on and, for managers, the ones they run, with a New project dialog. */
+/**
+ * Where everyone logs their daily hours on their projects, followed by the projects they're on and, for managers,
+ * the ones they run, with a New project dialog.
+ */
 @Component({
-  imports: [ProjectForm, RouterLink],
+  imports: [DailyHours, ProjectForm, RouterLink],
   selector: 'app-projects',
   styleUrl: './projects.scss',
   templateUrl: './projects.html',
@@ -20,6 +33,9 @@ export class Projects {
   private readonly projectsService = inject(ProjectsService);
   private readonly orgChartService = inject(OrgChartService);
   private readonly user = inject(AuthService).currentUser;
+
+  /** Bound from the `?date=` query param: the day shown in Daily hours (default: today). */
+  readonly date = input<string>();
 
   protected readonly isManager = computed(() => this.user()?.role === 'Manager');
 

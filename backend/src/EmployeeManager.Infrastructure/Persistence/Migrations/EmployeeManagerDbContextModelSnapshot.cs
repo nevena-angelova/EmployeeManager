@@ -214,6 +214,54 @@ namespace EmployeeManager.Infrastructure.Persistence.Migrations
                     b.ToTable("project_members", (string)null);
                 });
 
+            modelBuilder.Entity("EmployeeManager.Domain.Entities.TimeEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date")
+                        .HasColumnName("date");
+
+                    b.Property<Guid>("EmployeeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("employee_id");
+
+                    b.Property<decimal>("Hours")
+                        .HasPrecision(3, 1)
+                        .HasColumnType("numeric(3,1)")
+                        .HasColumnName("hours");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_time_entries");
+
+                    b.HasIndex("ProjectId", "Date")
+                        .HasDatabaseName("ix_time_entries_project_id_date");
+
+                    b.HasIndex("EmployeeId", "Date", "ProjectId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_time_entries_employee_id_date_project_id");
+
+                    b.ToTable("time_entries", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_time_entries_hours_in_day", "hours > 0 AND hours <= 24");
+                        });
+                });
+
             modelBuilder.Entity("EmployeeManager.Infrastructure.Identity.ApplicationUser", b =>
                 {
                     b.Property<Guid>("Id")
@@ -524,6 +572,27 @@ namespace EmployeeManager.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_project_members_projects_project_id");
+
+                    b.Navigation("Employee");
+
+                    b.Navigation("Project");
+                });
+
+            modelBuilder.Entity("EmployeeManager.Domain.Entities.TimeEntry", b =>
+                {
+                    b.HasOne("EmployeeManager.Domain.Entities.Employee", "Employee")
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_time_entries_employees_employee_id");
+
+                    b.HasOne("EmployeeManager.Domain.Entities.Project", "Project")
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_time_entries_projects_project_id");
 
                     b.Navigation("Employee");
 
