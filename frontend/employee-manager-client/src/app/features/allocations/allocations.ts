@@ -114,6 +114,27 @@ export class Allocations {
       ]),
     );
   });
+  /** Each report's logged hours as a bar on the same scale, to compare with the plan above it. */
+  protected readonly teamLoggedRails = computed(() => {
+    const team = this.team.value();
+    return new Map<string, HourRail>(
+      (team?.members ?? []).map((member) => [
+        member.employeeId,
+        loggedRail(
+          hourRail(
+            (team?.projects ?? []).map((project, index) => ({
+              key: project.id,
+              label: project.name,
+              hours: member.logged.find((h) => h.projectId === project.id)?.hours ?? 0,
+              colour: projectColour(index).edge,
+            })),
+            member.otherLoggedHours,
+            team?.capacityHours ?? 0,
+          ),
+        ),
+      ]),
+    );
+  });
   /** Your own month as a coloured bar. */
   protected readonly mineRail = computed(() => {
     const mine = this.mine.value();
@@ -127,6 +148,25 @@ export class Allocations {
           })),
           0,
           mine.capacityHours,
+        )
+      : null;
+  });
+
+  /** Your own logged hours as a bar on the same scale. */
+  protected readonly mineLoggedRail = computed(() => {
+    const mine = this.mine.value();
+    return mine
+      ? loggedRail(
+          hourRail(
+            mine.projects.map((project, index) => ({
+              key: project.projectId,
+              label: project.projectName,
+              hours: project.loggedHours,
+              colour: projectColour(index).edge,
+            })),
+            0,
+            mine.capacityHours,
+          ),
         )
       : null;
   });
@@ -359,6 +399,11 @@ function halfHours(control: AbstractControl<number | null>): ValidationErrors | 
   return Number.isFinite(value) && value >= 0 && Number.isInteger(value * 2)
     ? null
     : { halfHours: true };
+}
+
+/** Labels a rail of logged hours so screen readers can tell it from the plan. */
+function loggedRail(rail: HourRail): HourRail {
+  return { ...rail, description: `Logged ${rail.description}` };
 }
 
 function sum(hours: readonly (number | null)[]): number {

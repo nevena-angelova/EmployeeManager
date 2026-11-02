@@ -158,7 +158,7 @@
                             *ngTemplateOutlet="railTemplate; context: { $implicit: rail }"
                           />
                         }
-                        <span class="total-line">
+                        <span class="total-line total-planned">
                           <span class="total-figure"
                             ><span class="total-value">{{
                               format(totals().get(member.employeeId) ?? 0)
@@ -183,6 +183,13 @@
                             >
                           }
                         </span>
+                        @if (teamLoggedRails().get(member.employeeId); as rail) {
+                          <span class="logged-rail">
+                            <ng-container
+                              *ngTemplateOutlet="railTemplate; context: { $implicit: rail }"
+                            />
+                          </span>
+                        }
                         <span class="total-line total-logged">
                           <span class="total-figure"
                             ><span class="total-value">{{
@@ -250,7 +257,6 @@
             <p class="mine-summary" [class.over]="rail.isOver">
               <span class="mine-total">{{ format(current.totalHours) }} h</span>
               <span class="muted">of {{ format(current.capacityHours) }} h in {{ label() }}</span>
-              <span class="mine-logged">{{ format(current.totalLoggedHours) }} h logged</span>
               @if (rail.isOver) {
                 <span class="mine-state over-label"
                   >Over capacity by {{ format(current.totalHours - current.capacityHours) }} h</span
@@ -260,6 +266,15 @@
                   >{{ format(current.capacityHours - current.totalHours) }} h free</span
                 >
               }
+            </p>
+          </div>
+        }
+        @if (mineLoggedRail(); as rail) {
+          <div class="mine-rail logged-rail">
+            <ng-container *ngTemplateOutlet="railTemplate; context: { $implicit: rail }" />
+            <p class="mine-summary">
+              <span class="mine-total mine-logged">{{ format(current.totalLoggedHours) }} h</span>
+              <span class="muted">logged of {{ format(current.totalHours) }} h allocated</span>
             </p>
           </div>
         }

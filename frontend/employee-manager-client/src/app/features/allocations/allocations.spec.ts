@@ -299,7 +299,17 @@ describe('Allocations', () => {
     expect(logCell.textContent?.trim()).toBe('14.5');
     expect(logCell.classList).toContain('ahead');
     expect(element.querySelector('.mine tfoot .logged-hours')?.textContent).toContain('14.5 h');
-    expect(element.querySelector('.mine-logged')?.textContent).toContain('14.5 h logged');
+    expect(element.querySelector('.mine-logged')?.textContent).toBe('14.5 h');
+
+    // A logged bar under each planned one.
+    const rails = [...ethan.querySelectorAll('.total .rail')];
+    expect(rails.map((rail) => rail.getAttribute('aria-label'))).toEqual([
+      '136 of 168 hours: Billing 80, Payments API 40, elsewhere 16',
+      'Logged 26.5 of 168 hours: Billing 22.5, elsewhere 4',
+    ]);
+    expect(element.querySelector('.mine-rail.logged-rail .rail')?.getAttribute('aria-label')).toBe(
+      'Logged 14.5 of 168 hours: Annual planning 14.5',
+    );
   });
 
   it('navigates to the previous and next month', async () => {
