@@ -1,3 +1,4 @@
+using EmployeeManager.Application.Allocations;
 using EmployeeManager.Application.Employees.OrgChart;
 using EmployeeManager.Application.Projects;
 using Microsoft.Extensions.DependencyInjection;
@@ -10,6 +11,7 @@ public static class DependencyInjection
     {
         services.AddScoped<IOrgChartService, OrgChartService>();
         services.AddScoped<IProjectService, ProjectService>();
+        services.AddScoped<IAllocationService, AllocationService>();
         return services;
     }
 }

@@ -1,3 +1,4 @@
+using EmployeeManager.Application.Allocations;
 using EmployeeManager.Application.Common.Interfaces;
 using EmployeeManager.Application.Employees.Management;
 using EmployeeManager.Domain.Entities;
@@ -5,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace EmployeeManager.Application.Projects;
 
-public class ProjectService(IApplicationDbContext db) : IProjectService
+public class ProjectService(IApplicationDbContext db, TimeProvider timeProvider) : IProjectService
 {
     private const string DuplicateNameError = "You already have a project with this name.";
 
@@ -98,9 +99,20 @@ public class ProjectService(IApplicationDbContext db) : IProjectService
         project.Name = name;
         project.Description = description;
 
-        foreach (var member in project.Members.Where(m => !memberIds.Contains(m.EmployeeId)).ToList())
+        var removed = project.Members.Where(m => !memberIds.Contains(m.EmployeeId)).ToList();
+        foreach (var member in removed)
         {
             db.ProjectMembers.Remove(member);
+        }
+
+        // People taken off the project lose their hours on it from this month on; past months are kept.
+        if (removed.Count > 0)
+        {
+            var removedIds = removed.Select(m => m.EmployeeId).ToList();
+            var currentMonth = AllocationMonth.Current(timeProvider);
+            db.HourAllocations.RemoveRange(await db.HourAllocations
+                .Where(a => a.ProjectId == id && removedIds.Contains(a.EmployeeId) && a.Month >= currentMonth)
+                .ToListAsync(cancellationToken));
         }
 
         foreach (var employeeId in memberIds.Where(e => !currentMemberIds.Contains(e)))

@@ -87,6 +87,56 @@ namespace EmployeeManager.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("EmployeeManager.Domain.Entities.HourAllocation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("EmployeeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("employee_id");
+
+                    b.Property<decimal>("Hours")
+                        .HasPrecision(5, 1)
+                        .HasColumnType("numeric(5,1)")
+                        .HasColumnName("hours");
+
+                    b.Property<DateOnly>("Month")
+                        .HasColumnType("date")
+                        .HasColumnName("month");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_hour_allocations");
+
+                    b.HasIndex("ProjectId", "Month")
+                        .HasDatabaseName("ix_hour_allocations_project_id_month");
+
+                    b.HasIndex("EmployeeId", "ProjectId", "Month")
+                        .IsUnique()
+                        .HasDatabaseName("ix_hour_allocations_employee_id_project_id_month");
+
+                    b.ToTable("hour_allocations", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_hour_allocations_hours_positive", "hours > 0");
+
+                            t.HasCheckConstraint("ck_hour_allocations_month_first_day", "extract(day from month) = 1");
+                        });
+                });
+
             modelBuilder.Entity("EmployeeManager.Domain.Entities.Project", b =>
                 {
                     b.Property<Guid>("Id")
@@ -424,6 +474,27 @@ namespace EmployeeManager.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_employees_employees_manager_id");
 
                     b.Navigation("Manager");
+                });
+
+            modelBuilder.Entity("EmployeeManager.Domain.Entities.HourAllocation", b =>
+                {
+                    b.HasOne("EmployeeManager.Domain.Entities.Employee", "Employee")
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_hour_allocations_employees_employee_id");
+
+                    b.HasOne("EmployeeManager.Domain.Entities.Project", "Project")
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_hour_allocations_projects_project_id");
+
+                    b.Navigation("Employee");
+
+                    b.Navigation("Project");
                 });
 
             modelBuilder.Entity("EmployeeManager.Domain.Entities.Project", b =>

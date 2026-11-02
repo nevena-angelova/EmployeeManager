@@ -1,0 +1,207 @@
+<section class="page">
+  <div class="page-intro">
+    <div>
+      <h2>Hours</h2>
+      <p class="description">
+        @if (isManager()) {
+          Plan how many hours each of your direct reports spends on your projects each month. Below
+          that are your own hours.
+        } @else {
+          How many hours you’re allocated to each of your projects this month.
+        }
+      </p>
+    </div>
+    <nav class="month-nav" aria-label="Month">
+      <button type="button" class="step" (click)="previous()" aria-label="Previous month">‹</button>
+      <span class="month-label" aria-live="polite">{{ label() }}</span>
+      <button type="button" class="step" (click)="next()" aria-label="Next month">›</button>
+    </nav>
+  </div>
+
+  @if (isManager()) {
+    <section aria-labelledby="team-title">
+      <h3 id="team-title">Team hours</h3>
+      @if (team.error()) {
+        <div class="status error" role="alert">
+          <p>Your team’s hours couldn't be loaded.</p>
+          <button type="button" class="primary" (click)="team.reload()">Retry</button>
+        </div>
+      } @else if (team.isLoading() && !team.hasValue()) {
+        <p class="status" aria-live="polite">Loading hours…</p>
+      } @else if (team.value(); as current) {
+        @if (!current.members.length) {
+          <p class="status">You have no direct reports to allocate hours to.</p>
+        } @else if (!current.projects.length) {
+          <p class="status">
+            You don’t run any projects yet. <a routerLink="/projects">Start a project</a> to
+            allocate hours on it.
+          </p>
+        } @else {
+          @if (conflict(); as message) {
+            <div class="banner-error" role="alert">
+              <p>{{ message }}</p>
+              <button type="button" (click)="reload()">Reload</button>
+            </div>
+          }
+          @if (!current.isEditable) {
+            <p class="note">{{ label() }} has passed, so its hours are read-only.</p>
+          }
+          <form [formGroup]="form()" (ngSubmit)="save()" novalidate>
+            <div class="grid-scroll">
+              <table class="grid">
+                <thead>
+                  <tr>
+                    <th scope="col" class="person">Direct report</th>
+                    @for (project of current.projects; track project.id) {
+                      <th scope="col" class="hours">{{ project.name }}</th>
+                    }
+                    <th scope="col" class="total">
+                      Total <span class="capacity">/ {{ format(current.capacityHours) }} h</span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (member of current.members; track member.employeeId) {
+                    @let error = rowError(member);
+                    <tr [class.has-error]="!!error">
+                      <th scope="row" class="person">
+                        <span
+                          class="stop"
+                          [style.--line]="colour(member.employeeId)"
+                          aria-hidden="true"
+                        ></span>
+                        <span class="person-text">
+                          <span class="member-name"
+                            >{{ member.firstName }} {{ member.lastName }}</span
+                          >
+                          <span class="muted">{{ member.jobTitle }}</span>
+                        </span>
+                      </th>
+                      @for (project of current.projects; track project.id) {
+                        <td class="hours">
+                          @if (control(member.employeeId, project.id); as cell) {
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.5"
+                              inputmode="decimal"
+                              [formControl]="cell"
+                              [class.former]="!isMember(member, project.id)"
+                              [attr.aria-invalid]="cell.invalid || null"
+                              [attr.aria-label]="
+                                member.firstName +
+                                ' ' +
+                                member.lastName +
+                                ', ' +
+                                project.name +
+                                ', hours'
+                              "
+                              [title]="
+                                isMember(member, project.id)
+                                  ? ''
+                                  : 'No longer on this project: set to 0 to remove these hours'
+                              "
+                            />
+                          } @else {
+                            <span class="none" title="Not on this project">—</span>
+                          }
+                        </td>
+                      }
+                      <td
+                        class="total"
+                        [class.over]="isOver(current, member)"
+                        [title]="totalTitle(member)"
+                      >
+                        <span class="total-value">{{
+                          format(totals().get(member.employeeId) ?? 0)
+                        }}</span>
+                        @if (member.otherHours) {
+                          <span class="other">incl. {{ format(member.otherHours) }} elsewhere</span>
+                        }
+                        @if (isOver(current, member)) {
+                          <span class="over-label">Over capacity</span>
+                        }
+                      </td>
+                    </tr>
+                    @if (error) {
+                      <tr class="row-error">
+                        <td [attr.colspan]="current.projects.length + 2" role="alert">
+                          {{ error }}
+                        </td>
+                      </tr>
+                    }
+                  }
+                </tbody>
+              </table>
+            </div>
+
+            @if (saveError()) {
+              <p class="form-error" role="alert">{{ saveError() }}</p>
+            }
+
+            @if (current.isEditable) {
+              <div class="actions">
+                @if (saved() && !dirty()) {
+                  <span class="saved" role="status">Saved</span>
+                }
+                <button type="button" (click)="reset()" [disabled]="!dirty() || saving()">
+                  Reset
+                </button>
+                <button type="submit" class="primary" [disabled]="saving()">
+                  {{ saving() ? 'Saving…' : 'Save hours' }}
+                </button>
+              </div>
+            }
+          </form>
+        }
+      }
+    </section>
+  }
+
+  <section aria-labelledby="mine-title">
+    <h3 id="mine-title">My hours</h3>
+    @if (mine.error()) {
+      <div class="status error" role="alert">
+        <p>Your hours couldn't be loaded.</p>
+        <button type="button" class="primary" (click)="mine.reload()">Retry</button>
+      </div>
+    } @else if (mine.isLoading() && !mine.hasValue()) {
+      <p class="status" aria-live="polite">Loading hours…</p>
+    } @else if (mine.value(); as current) {
+      @if (current.projects.length) {
+        <table class="mine">
+          <thead>
+            <tr>
+              <th scope="col">Project</th>
+              <th scope="col">Run by</th>
+              <th scope="col" class="hours">Hours</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (project of current.projects; track project.projectId) {
+              <tr>
+                <td class="project-name">{{ project.projectName }}</td>
+                <td class="muted">{{ project.ownerName }}</td>
+                <td class="hours">{{ format(project.hours) }}</td>
+              </tr>
+            }
+          </tbody>
+          <tfoot>
+            <tr [class.over]="current.totalHours > current.capacityHours">
+              <th scope="row" colspan="2">Total</th>
+              <td class="hours">
+                {{ format(current.totalHours) }}
+                <span class="capacity">/ {{ format(current.capacityHours) }} h</span>
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      } @else {
+        <p class="status">
+          No hours allocated to you in {{ label() }}. You have {{ format(current.capacityHours) }} h
+          available.
+        </p>
+      }
+    }
+  </section>
+</section>

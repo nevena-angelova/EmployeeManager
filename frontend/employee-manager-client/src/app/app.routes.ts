@@ -44,4 +44,10 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/projects/project-detail/project-detail').then((m) => m.ProjectDetail),
   },
+  {
+    path: 'allocations',
+    title: 'Hours',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/allocations/allocations').then((m) => m.Allocations),
+  },
 ];
