@@ -40,25 +40,37 @@ section + section {
   color: var(--color-muted);
 }
 
+// One pill holding ‹ month ›, so the control reads as a single thing.
 .month-nav {
   display: flex;
   align-items: center;
-  gap: 8px;
+  padding: 3px;
+  border: 1.5px solid var(--color-rule);
+  border-radius: 999px;
+  background: var(--color-surface);
 }
 
 .month-label {
   min-width: 9.5em;
+  padding-top: 2px;
   font-size: 1.125rem;
   font-weight: 700;
   text-align: center;
 }
 
 button.step {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   padding: 0;
-  font-size: 1.25rem;
+  border-color: transparent;
+  border-radius: 50%;
+  font-size: 1.5rem;
   line-height: 1;
+
+  &:hover {
+    border-color: transparent;
+    background: var(--color-paper);
+  }
 }
 
 .note {
@@ -75,6 +87,7 @@ button.step {
 table {
   width: 100%;
   border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
 }
 
 th,
@@ -100,15 +113,30 @@ thead th {
     padding-left: 0;
   }
 
-  .person {
-    min-width: 200px;
+  th:last-child,
+  td:last-child {
+    padding-right: 0;
   }
 
-  tbody th.person {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+  tbody th,
+  tbody td {
+    padding-top: 12px;
+    padding-bottom: 12px;
+  }
+
+  // The names stay put while the projects scroll sideways on narrow screens.
+  .person {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    min-width: 200px;
+    background: var(--color-paper);
     font-weight: 400;
+  }
+
+  .project {
+    min-width: 7.5em;
+    color: var(--color-ink);
   }
 
   tr.has-error td,
@@ -117,8 +145,25 @@ thead th {
   }
 }
 
+// A project's colour key, in its column header and on My hours.
+.chip {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin: 0 8px 1px 0;
+  border-radius: 3px;
+  background: var(--project);
+  vertical-align: middle;
+}
+
 .hours {
   text-align: right;
+}
+
+.person-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .person-text {
@@ -146,32 +191,82 @@ thead th {
   font-size: 0.875rem;
 }
 
-input {
-  width: 5.5em;
-  padding: 6px 8px 4px;
-  border: 1.5px solid var(--color-rule);
-  border-radius: 6px;
-  background: var(--color-surface);
-  color: inherit;
-  font: inherit;
-  text-align: right;
+// An allocation block: the project's tint with a strong left edge, like a booking on a schedule.
+.block {
+  display: flex;
+  align-items: baseline;
+  border-left: 4px solid var(--project);
+  border-radius: 4px 8px 8px 4px;
+  background: var(--project-tint);
+  transition: box-shadow 120ms ease;
 
-  &:focus {
-    border-color: var(--color-ink);
+  &:focus-within {
+    box-shadow: 0 0 0 2px var(--project);
+  }
+
+  // Hours left over from a member who has moved on: an outline only, to be cleared.
+  &.former {
+    border-left-style: dashed;
+    background: repeating-linear-gradient(
+      -45deg,
+      var(--project-tint) 0 6px,
+      var(--color-surface) 6px 10px
+    );
+  }
+
+  &:has(input[aria-invalid='true']) {
+    box-shadow: 0 0 0 2px var(--color-danger);
+  }
+
+  &:has(input:disabled) {
+    background: transparent;
+  }
+}
+
+.unit {
+  padding-right: 10px;
+  color: var(--color-muted);
+  font-size: 0.8125rem;
+}
+
+input {
+  width: 4.5em;
+  min-width: 0;
+  flex: 1;
+  padding: 9px 4px 7px 8px;
+  border: 0;
+  background: transparent;
+  color: var(--color-ink);
+  font: inherit;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  appearance: textfield;
+
+  &::-webkit-outer-spin-button,
+  &::-webkit-inner-spin-button {
+    margin: 0;
+    appearance: none;
+  }
+
+  // The block's ring shows focus.
+  &:focus-visible {
+    outline: 0;
   }
 
   &:disabled {
-    border-color: transparent;
-    background: transparent;
+    color: var(--color-ink);
+    opacity: 1;
   }
+}
 
-  &.former {
-    border-style: dashed;
-  }
-
-  &[aria-invalid='true'] {
-    border-color: var(--color-danger);
-  }
+// Where the report isn't on the project: an empty slot.
+.slot {
+  display: block;
+  padding: 7px 10px 5px;
+  border: 1.5px dashed var(--color-rule);
+  border-radius: 8px;
+  text-align: center;
 }
 
 .none {
@@ -179,18 +274,27 @@ input {
 }
 
 .total {
-  min-width: 120px;
-  text-align: right;
-  white-space: nowrap;
+  width: 240px;
+  min-width: 200px;
+  text-align: left;
   cursor: help;
+}
 
-  > span {
-    display: block;
-  }
+.total-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 6px;
+  white-space: nowrap;
 }
 
 .total-value {
   font-weight: 700;
+}
+
+.total-figure .capacity {
+  margin-left: 0.25em;
 }
 
 .capacity {
@@ -212,8 +316,68 @@ input {
 }
 
 .over-label {
+  color: var(--color-danger);
   font-size: 0.75rem;
   font-weight: 700;
+}
+
+// The month as a rail: one segment per project, hatched grey for other managers' projects, an empty
+// track for free time. Over capacity, the part past the mark is hatched red.
+.rail {
+  position: relative;
+  display: flex;
+  height: 14px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--color-paper);
+  box-shadow: inset 0 0 0 1px var(--color-rule);
+
+  &.over {
+    box-shadow: 0 0 0 2px var(--color-danger);
+  }
+}
+
+.segment {
+  flex: none;
+  min-width: 0;
+  height: 100%;
+  border-right: 2px solid var(--color-surface);
+  background: var(--project);
+  transition: width 200ms ease-out;
+
+  &.elsewhere {
+    background: repeating-linear-gradient(
+      -45deg,
+      var(--color-muted) 0 2px,
+      var(--color-rule) 2px 6px
+    );
+  }
+}
+
+.free {
+  flex: none;
+  transition: width 200ms ease-out;
+}
+
+.capacity-mark {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  border-left: 2px solid var(--color-ink);
+  background: repeating-linear-gradient(
+    -45deg,
+    color-mix(in srgb, var(--color-danger) 55%, transparent) 0 3px,
+    transparent 3px 7px
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .segment,
+  .free,
+  .block {
+    transition: none;
+  }
 }
 
 .row-error td {
@@ -242,9 +406,42 @@ input {
   font-size: 0.875rem;
 }
 
-.mine {
+// Your month at a glance, above the breakdown.
+.mine-rail {
+  margin-bottom: 24px;
+  padding: 20px 0 0;
   border-top: 2px solid var(--color-ink);
 
+  .rail {
+    height: 28px;
+  }
+}
+
+.mine-summary {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin: 12px 0 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.mine-total {
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.mine-state {
+  margin-left: auto;
+  font-weight: 600;
+
+  &.over-label {
+    font-size: 1rem;
+  }
+}
+
+.mine {
   th:first-child,
   td:first-child {
     padding-left: 0;
@@ -256,6 +453,14 @@ input {
   }
 
   .project-name {
+    font-weight: 700;
+  }
+
+  .hours {
+    white-space: nowrap;
+  }
+
+  tbody .hours {
     font-weight: 700;
   }
 
@@ -328,4 +533,14 @@ button {
 .error p {
   margin: 0 0 12px;
   color: var(--color-danger);
+}
+
+@media (max-width: 600px) {
+  .grid .person {
+    min-width: 150px;
+  }
+
+  .mine-total {
+    font-size: 1.5rem;
+  }
 }
