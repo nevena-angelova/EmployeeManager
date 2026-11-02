@@ -170,7 +170,7 @@ describe('Allocations', () => {
           .join('')
           .trim(),
       ),
-    ).toEqual(['Direct report', 'Billing', 'Payments API', 'Total / 168 h']);
+    ).toEqual(['Direct report', 'Billing', 'Payments API', 'Month total of 168 h']);
     expect(element.querySelector('.grid thead .pair-caption')?.textContent).toBe('PlannedLogged');
     expect(rows(element)).toEqual([
       ['Ethan Clarke', '80', '40', '136'],
@@ -192,7 +192,7 @@ describe('Allocations', () => {
 
     expect(rows(element)[0][3]).toBe('176.5');
     expect(element.querySelector('.grid tbody .total')?.classList).toContain('over');
-    expect(element.querySelector('.over-label')?.textContent).toContain('Over capacity');
+    expect(element.querySelector('.over-label')?.textContent).toContain('over capacity');
   });
 
   it('saves the non-zero hours', async () => {
@@ -292,7 +292,9 @@ describe('Allocations', () => {
     );
     expect(logged).toEqual(['22.5', '0']);
     expect(ethan.querySelector('.total-logged .total-value')?.textContent).toBe('26.5');
-    expect(ethan.querySelector('.total-logged')?.textContent).toContain('incl. 4 h elsewhere');
+    expect(ethan.querySelector('.track-note')?.textContent).toContain(
+      'Includes other managers’ projects: 16 h planned, 4 h logged',
+    );
 
     const row = element.querySelector('.mine tbody tr')!;
     const logCell = row.querySelector('.logged-hours')!;
@@ -307,7 +309,7 @@ describe('Allocations', () => {
       '136 of 168 hours: Billing 80, Payments API 40, elsewhere 16',
       'Logged 26.5 of 168 hours: Billing 22.5, elsewhere 4',
     ]);
-    expect(element.querySelector('.mine-rail.logged-rail .rail')?.getAttribute('aria-label')).toBe(
+    expect(element.querySelectorAll('.tracks-large .rail')[1]?.getAttribute('aria-label')).toBe(
       'Logged 14.5 of 168 hours: Annual planning 14.5',
     );
   });
