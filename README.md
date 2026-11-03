@@ -85,6 +85,17 @@ EmployeeManager/
 - **Modern Angular:** lazy-loaded feature routes, route guards per role, an HTTP interceptor for the
   token, and state in signals instead of Zone.js change detection.
 
+## Database schema
+
+- **`employees`** form the hierarchy through a self-referencing `manager_id`. Each has one sign-in account
+  in **`users`**, an ASP.NET Core Identity table (along with `roles`, `user_roles` and the other `user_*` /
+  `role_*` tables).
+- **`projects`** are owned by a manager (`owner_id`). **`project_members`** links them to employees.
+- **`hour_allocations`** hold a manager's monthly plan per employee and project. **`time_entries`** hold
+  the hours employees actually log per day.
+
+![Database schema](docs/database-schema.webp)
+
 ## Getting started
 
 Prerequisites: .NET 10 SDK, Node.js 22.22+ / 24.15+ / 26+, and PostgreSQL 18 (local or via Docker).
