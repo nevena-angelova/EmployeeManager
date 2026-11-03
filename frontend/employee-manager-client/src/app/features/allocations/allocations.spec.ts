@@ -314,6 +314,18 @@ describe('Allocations', () => {
     );
   });
 
+  it('links managers, and only managers, to the statistics for the month’s year', async () => {
+    let element = await render(lucas);
+    const link = [...element.querySelectorAll('a')].find((a) => a.textContent === 'Statistics');
+    expect(link?.getAttribute('href')).toBe('/allocations/statistics?year=2026');
+
+    TestBed.resetTestingModule();
+    element = await render({ ...lucas, role: 'Employee' });
+    expect([...element.querySelectorAll('a')].some((a) => a.textContent === 'Statistics')).toBe(
+      false,
+    );
+  });
+
   it('navigates to the previous and next month', async () => {
     const element = await render({ ...lucas, role: 'Employee' });
     const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);

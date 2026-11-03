@@ -214,6 +214,36 @@ public sealed class AllocationServiceTests : IDisposable
         Assert.Equal(0, oscar.OtherLoggedHours);
     }
 
+    [Fact]
+    public async Task GetTeamStatisticsAsync_SumsTheYearByMonthProjectAndReport()
+    {
+        await AddHoursAsync((report, alpha, 40), (report, gamma, 20), (otherReport, alpha, 10));
+        await AddHoursAsync(October, (report, beta, 30));
+        await AddHoursAsync(new DateOnly(2025, 11, 1), (report, alpha, 99));
+        await AddHoursAsync((stranger, gamma, 50));
+        await AddEntriesAsync(
+            (report, alpha, new DateOnly(2026, 11, 2), 6),
+            (report, alpha, new DateOnly(2026, 11, 3), 2.5m),
+            (report, gamma, new DateOnly(2026, 11, 3), 3),
+            (report, beta, new DateOnly(2026, 10, 30), 8),
+            (report, alpha, new DateOnly(2025, 12, 31), 7));
+
+        await using var context = database.CreateContext();
+        var statistics = await NewService(context).GetTeamStatisticsAsync(2026, manager.Id);
+
+        Assert.Equal(2026, statistics.Year);
+        Assert.Equal(12, statistics.Months.Count);
+        Assert.Equal(
+            new MonthStatisticsDto("2026-11", 168, 50, 8.5m, 20, 3),
+            statistics.Months[10]);
+        Assert.Equal(new MonthStatisticsDto("2026-10", 176, 30, 8, 0, 0), statistics.Months[9]);
+        Assert.Equal(["Alpha", "Beta"], statistics.Projects.Select(p => p.Name));
+        Assert.Equal((50m, 8.5m), (statistics.Projects[0].TotalPlanned, statistics.Projects[0].TotalLogged));
+        Assert.Equal([otherReport.Id, report.Id], statistics.Members.Select(m => m.EmployeeId));
+        Assert.Equal((70m, 16.5m), (statistics.Members[1].TotalPlanned, statistics.Members[1].TotalLogged));
+        Assert.Equal((80m, 16.5m), (statistics.TotalPlanned, statistics.TotalLogged));
+    }
+
     private async Task AddEntriesAsync(params (Employee Employee, Project Project, DateOnly Date, decimal Hours)[] entries)
     {
         await using var context = database.CreateContext();

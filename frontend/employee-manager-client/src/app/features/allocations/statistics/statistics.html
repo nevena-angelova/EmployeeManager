@@ -1,0 +1,267 @@
+<section class="page">
+  <a class="back" routerLink="/allocations">‹ Back to Hours</a>
+  <div class="page-intro">
+    <div>
+      <h2>Hours statistics</h2>
+      <p class="description">
+        Your direct reports’ planned and logged hours on your projects, month by month. Hours on
+        other managers’ projects show as “Elsewhere”.
+      </p>
+    </div>
+    <nav class="year-nav" aria-label="Year">
+      <button type="button" class="step" (click)="previous()" aria-label="Previous year">
+        <span aria-hidden="true">‹</span>
+      </button>
+      <span class="year-label" aria-live="polite">{{ selectedYear() }}</span>
+      <button type="button" class="step" (click)="next()" aria-label="Next year">
+        <span aria-hidden="true">›</span>
+      </button>
+    </nav>
+  </div>
+
+  @if (statistics.error()) {
+    <div class="status error" role="alert">
+      <p>Your team’s statistics couldn't be loaded.</p>
+      <button type="button" class="primary" (click)="statistics.reload()">Retry</button>
+    </div>
+  } @else if (statistics.isLoading() && !statistics.hasValue()) {
+    <p class="status" aria-live="polite">Loading statistics…</p>
+  } @else if (statistics.value(); as current) {
+    @if (!current.members.length) {
+      <p class="status">You have no direct reports, so there are no hours to show.</p>
+    } @else if (!current.projects.length) {
+      <p class="status">
+        You don’t run any projects yet. <a routerLink="/projects">Start a project</a> to plan hours
+        on it.
+      </p>
+    } @else {
+      <dl class="summary">
+        <div>
+          <dt>Planned in {{ current.year }}</dt>
+          <dd class="summary-planned">{{ format(current.totalPlanned) }} <span>h</span></dd>
+        </div>
+        <div>
+          <dt>Logged</dt>
+          <dd class="summary-logged">{{ format(current.totalLogged) }} <span>h</span></dd>
+        </div>
+        <div>
+          <dt>Logged of planned</dt>
+          <dd class="summary-percent">
+            @if (loggedPercent() !== null) {
+              {{ loggedPercent() }} <span>%</span>
+            } @else {
+              —
+            }
+          </dd>
+        </div>
+      </dl>
+
+      @if (chart(); as chart) {
+        <section aria-labelledby="chart-title">
+          <h3 id="chart-title">Planned and logged by month</h3>
+          <ul class="legend" aria-hidden="true">
+            <li><span class="key planned"></span>Planned</li>
+            <li><span class="key logged"></span>Logged</li>
+            <li><span class="key capacity"></span>Team capacity</li>
+          </ul>
+          <figure class="chart">
+            <div class="bars" role="img" [attr.aria-label]="chart.description">
+              @for (bar of chart.bars; track bar.month) {
+                <div class="month-bars">
+                  <span
+                    class="bar planned"
+                    [style.height.%]="bar.plannedPercent"
+                    [title]="bar.label + ': ' + format(bar.planned) + ' h planned'"
+                  ></span>
+                  <span
+                    class="bar logged"
+                    [style.height.%]="bar.loggedPercent"
+                    [title]="bar.label + ': ' + format(bar.logged) + ' h logged'"
+                  ></span>
+                  @if (bar.capacityHours) {
+                    <span
+                      class="capacity-tick"
+                      [style.bottom.%]="bar.capacityPercent"
+                      [title]="bar.label + ': ' + format(bar.capacityHours) + ' h team capacity'"
+                    ></span>
+                  }
+                </div>
+              }
+            </div>
+            <div class="month-links">
+              @for (bar of chart.bars; track bar.month) {
+                <a
+                  routerLink="/allocations"
+                  [queryParams]="{ month: bar.month }"
+                  [attr.aria-label]="'Hours for ' + monthLabel(bar.month)"
+                  >{{ bar.label }}</a
+                >
+              }
+            </div>
+          </figure>
+        </section>
+      }
+
+      <section aria-labelledby="by-month-title">
+        <h3 id="by-month-title">By month</h3>
+        <div class="table-scroll">
+          <table class="by-month">
+            <thead>
+              <tr>
+                <th scope="col">Month</th>
+                <th scope="col" class="hours" title="Each report’s capacity added up">
+                  Team capacity
+                </th>
+                <th scope="col" class="hours">Planned</th>
+                <th scope="col" class="hours">Logged</th>
+                <th scope="col" class="hours" title="Logged minus planned">Difference</th>
+                <th scope="col" class="hours" title="On other managers’ projects">
+                  Elsewhere <span class="caption">planned / logged</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (month of current.months; track month.month) {
+                <tr>
+                  <th scope="row">
+                    <a routerLink="/allocations" [queryParams]="{ month: month.month }">{{
+                      monthLabel(month.month)
+                    }}</a>
+                  </th>
+                  <td class="hours muted">
+                    {{ format(teamCapacity(month, current.members.length)) }}
+                  </td>
+                  <td class="hours strong">{{ format(month.planned) }}</td>
+                  <td class="hours strong">{{ format(month.logged) }}</td>
+                  <td class="hours difference" [class.ahead]="month.logged > month.planned">
+                    {{ difference(month.planned, month.logged) }}
+                  </td>
+                  <td class="hours muted">
+                    {{ format(month.otherPlanned) }} / {{ format(month.otherLogged) }}
+                  </td>
+                </tr>
+              }
+            </tbody>
+            <tfoot>
+              <tr>
+                <th scope="row">Total</th>
+                <td class="hours"></td>
+                <td class="hours">{{ format(current.totalPlanned) }}</td>
+                <td class="hours">{{ format(current.totalLogged) }}</td>
+                <td class="hours difference">
+                  {{ difference(current.totalPlanned, current.totalLogged) }}
+                </td>
+                <td class="hours"></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </section>
+
+      <section aria-labelledby="by-project-title">
+        <h3 id="by-project-title">By project</h3>
+        <div class="table-scroll">
+          <table class="grid by-project">
+            <thead>
+              <tr>
+                <th scope="col" class="name">Project</th>
+                @for (month of current.months; track month.month) {
+                  <th scope="col" class="month">
+                    {{ shortMonth(month.month) }}
+                    <span class="caption">planned / logged</span>
+                  </th>
+                }
+                <th scope="col" class="month total">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (project of current.projects; track project.id; let i = $index) {
+                <tr [style.--project]="projectColour(i)">
+                  <th scope="row" class="name">
+                    <span class="chip" aria-hidden="true"></span
+                    ><a class="project-name" [routerLink]="['/projects', project.id]">{{
+                      project.name
+                    }}</a>
+                  </th>
+                  @for (month of project.months; track month.month) {
+                    <td class="month">
+                      <span class="pair"
+                        ><span class="planned">{{ format(month.planned) }}</span
+                        ><span class="sep"> / </span
+                        ><span class="logged">{{ format(month.logged) }}</span></span
+                      >
+                    </td>
+                  }
+                  <td class="month total">
+                    <span class="pair"
+                      ><span class="planned">{{ format(project.totalPlanned) }}</span
+                      ><span class="sep"> / </span
+                      ><span class="logged">{{ format(project.totalLogged) }}</span></span
+                    >
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section aria-labelledby="by-report-title">
+        <h3 id="by-report-title">By report</h3>
+        <div class="table-scroll">
+          <table class="grid by-report">
+            <thead>
+              <tr>
+                <th scope="col" class="name">Direct report</th>
+                @for (month of current.months; track month.month) {
+                  <th scope="col" class="month">
+                    {{ shortMonth(month.month) }}
+                    <span class="caption">planned / logged</span>
+                  </th>
+                }
+                <th scope="col" class="month total">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (member of current.members; track member.employeeId) {
+                <tr>
+                  <th scope="row" class="name">
+                    <div class="person-cell">
+                      <span
+                        class="stop"
+                        [style.--line]="colour(member.employeeId)"
+                        aria-hidden="true"
+                      ></span>
+                      <span class="person-text">
+                        <span class="member-name"
+                          >{{ member.firstName }} {{ member.lastName }}</span
+                        >
+                        <span class="muted">{{ member.jobTitle }}</span>
+                      </span>
+                    </div>
+                  </th>
+                  @for (month of member.months; track month.month) {
+                    <td class="month">
+                      <span class="pair"
+                        ><span class="planned">{{ format(month.planned) }}</span
+                        ><span class="sep"> / </span
+                        ><span class="logged">{{ format(month.logged) }}</span></span
+                      >
+                    </td>
+                  }
+                  <td class="month total">
+                    <span class="pair"
+                      ><span class="planned">{{ format(member.totalPlanned) }}</span
+                      ><span class="sep"> / </span
+                      ><span class="logged">{{ format(member.totalLogged) }}</span></span
+                    >
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+    }
+  }
+</section>

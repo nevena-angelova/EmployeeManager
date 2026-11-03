@@ -2,7 +2,12 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
 import { ApiService } from '../../core/services/api.service';
-import { MyAllocations, TeamAllocations, TeamAllocationsSave } from './allocation.model';
+import {
+  MyAllocations,
+  TeamAllocations,
+  TeamAllocationsSave,
+  TeamStatistics,
+} from './allocation.model';
 
 /** Monthly hours that managers allocate to their direct reports on their projects. `month` is `yyyy-MM`. */
 @Injectable({ providedIn: 'root' })
@@ -25,5 +30,10 @@ export class AllocationsService {
   /** The signed-in employee's own hours that month. */
   getMine(month: string): Observable<MyAllocations> {
     return this.api.get<MyAllocations>('allocations/mine', { month });
+  }
+
+  /** A year (`yyyy`) of the manager's direct reports' planned and logged hours, month by month. Managers only. */
+  getTeamStatistics(year: string): Observable<TeamStatistics> {
+    return this.api.get<TeamStatistics>('allocations/team/statistics', { year });
   }
 }

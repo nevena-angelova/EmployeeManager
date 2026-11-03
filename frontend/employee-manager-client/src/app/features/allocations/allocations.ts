@@ -18,6 +18,7 @@ import { flattenOrgChart } from '../projects/org-chart-people';
 import { AllocationSave, TeamAllocations, TeamMemberHours } from './allocation.model';
 import { AllocationsService } from './allocations.service';
 import { hourRail, HourRail, projectColour } from './hour-rail';
+import { formatHours } from './hours';
 import { currentMonth, isMonth, monthLabel, nextMonth, previousMonth } from './month';
 
 /** One report's hours, keyed by project id. */
@@ -408,8 +409,4 @@ function loggedRail(rail: HourRail): HourRail {
 
 function sum(hours: readonly (number | null)[]): number {
   return hours.reduce<number>((total, h) => total + (h && h > 0 ? h : 0), 0);
-}
-
-function formatHours(hours: number): string {
-  return String(Math.round(hours * 10) / 10);
 }

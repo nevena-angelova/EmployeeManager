@@ -72,6 +72,33 @@ public class AllocationsController(
     }
 
     /// <summary>
+    /// Returns a year of the signed-in manager's direct reports' planned and logged hours on the manager's projects,
+    /// by month, project and report. <c>year</c> is <c>yyyy</c> and defaults to the current year (UTC).
+    /// </summary>
+    [Authorize(Policy = AuthorizationPolicies.ManagerOnly)]
+    [HttpGet("team/statistics")]
+    [ProducesResponseType<TeamStatisticsDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<TeamStatisticsDto>> GetTeamStatistics(
+        string? year,
+        CancellationToken cancellationToken)
+    {
+        if (ParseYear(year) is not { } parsed)
+        {
+            return this.ToErrorResponse(EmployeeResult.Invalid("year", "The year must look like 2026."));
+        }
+
+        if (await this.GetCurrentEmployeeIdAsync(authService, cancellationToken) is not { } currentEmployeeId)
+        {
+            return Unauthorized();
+        }
+
+        return Ok(await allocationService.GetTeamStatisticsAsync(parsed, currentEmployeeId, cancellationToken));
+    }
+
+    /// <summary>
     /// Returns the signed-in employee's hours in the month on every project they're on or have hours on.
     /// </summary>
     [HttpGet("mine")]
@@ -97,6 +124,12 @@ public class AllocationsController(
     private DateOnly? ParseMonth(string? month) =>
         string.IsNullOrEmpty(month) ? AllocationMonth.Current(timeProvider)
         : AllocationMonth.TryParse(month, out var parsed) ? parsed
+        : null;
+
+    /// <summary>The requested year, the current one if none was given, or null if it isn't four digits.</summary>
+    private int? ParseYear(string? year) =>
+        string.IsNullOrEmpty(year) ? AllocationMonth.Current(timeProvider).Year
+        : AllocationMonth.TryParseYear(year, out var parsed) ? parsed
         : null;
 
     private ActionResult InvalidMonth() =>
