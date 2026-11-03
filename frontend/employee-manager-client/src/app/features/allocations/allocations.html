@@ -59,11 +59,16 @@
                     <th scope="col" class="person">Direct report</th>
                     @for (project of current.projects; track project.id; let i = $index) {
                       <th scope="col" class="project" [style.--project]="projectColour(i).edge">
-                        <span class="chip" aria-hidden="true"></span>{{ project.name }}
+                        <span class="chip" aria-hidden="true"></span
+                        ><span class="project-title">{{ project.name }}</span>
+                        <span class="pair pair-caption" aria-hidden="true"
+                          ><span>Planned</span><span>Logged</span></span
+                        >
                       </th>
                     }
                     <th scope="col" class="total">
-                      Total <span class="capacity">/ {{ format(current.capacityHours) }} h</span>
+                      Month total
+                      <span class="capacity">of {{ format(current.capacityHours) }} h</span>
                     </th>
                   </tr>
                 </thead>
@@ -87,47 +92,58 @@
                         </div>
                       </th>
                       @for (project of current.projects; track project.id; let i = $index) {
-                        <td
-                          class="hours"
-                          [style.--project]="projectColour(i).edge"
-                          [style.--project-tint]="projectColour(i).tint"
-                        >
-                          @if (control(member.employeeId, project.id); as cell) {
-                            <span class="block" [class.former]="!isMember(member, project.id)">
-                              <input
-                                type="number"
-                                min="0"
-                                step="0.5"
-                                inputmode="decimal"
-                                [formControl]="cell"
-                                [class.former]="!isMember(member, project.id)"
-                                [attr.aria-invalid]="cell.invalid || null"
+                        <td class="hours" [style.--project]="projectColour(i).edge">
+                          @let loggedHours = logged(member, project.id);
+                          <span class="pair">
+                            @if (control(member.employeeId, project.id); as cell) {
+                              <span class="block" [class.former]="!isMember(member, project.id)">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="0.5"
+                                  inputmode="decimal"
+                                  [formControl]="cell"
+                                  [class.former]="!isMember(member, project.id)"
+                                  [attr.aria-invalid]="cell.invalid || null"
+                                  [attr.aria-label]="
+                                    member.firstName +
+                                    ' ' +
+                                    member.lastName +
+                                    ', ' +
+                                    project.name +
+                                    ', planned hours'
+                                  "
+                                  [title]="
+                                    isMember(member, project.id)
+                                      ? ''
+                                      : 'No longer on this project: set to 0 to remove these hours'
+                                  "
+                                />
+                                <span class="unit" aria-hidden="true">h</span>
+                              </span>
+                            } @else {
+                              <span class="slot"
+                                ><span class="none" title="Not on this project">—</span></span
+                              >
+                            }
+                            @if (control(member.employeeId, project.id) || loggedHours) {
+                              <span
+                                class="block logged"
+                                title="Sum of this month’s daily hours"
                                 [attr.aria-label]="
                                   member.firstName +
                                   ' ' +
                                   member.lastName +
                                   ', ' +
                                   project.name +
-                                  ', hours'
+                                  ', logged hours: ' +
+                                  format(loggedHours)
                                 "
-                                [title]="
-                                  isMember(member, project.id)
-                                    ? ''
-                                    : 'No longer on this project: set to 0 to remove these hours'
-                                "
-                              />
-                              <span class="unit" aria-hidden="true">h</span>
-                            </span>
-                          } @else {
-                            <span class="slot"
-                              ><span class="none" title="Not on this project">—</span></span
-                            >
-                          }
-                          @if (logged(member, project.id); as loggedHours) {
-                            <span class="logged" title="Sum of this month’s daily hours"
-                              >{{ format(loggedHours) }} h logged</span
-                            >
-                          }
+                                ><span class="value">{{ format(loggedHours) }}</span
+                                ><span class="unit" aria-hidden="true">h</span></span
+                              >
+                            }
+                          </span>
                         </td>
                       }
                       <td
@@ -135,13 +151,14 @@
                         [class.over]="isOver(current, member)"
                         [title]="totalTitle(member)"
                       >
-                        @if (teamRails().get(member.employeeId); as rail) {
-                          <ng-container
-                            *ngTemplateOutlet="railTemplate; context: { $implicit: rail }"
-                          />
-                        }
-                        <span class="total-line">
-                          <span class="total-figure"
+                        <div class="tracks">
+                          <span class="track-label">Planned</span>
+                          @if (teamRails().get(member.employeeId); as rail) {
+                            <ng-container
+                              *ngTemplateOutlet="railTemplate; context: { $implicit: rail }"
+                            />
+                          }
+                          <span class="track-figure total-planned"
                             ><span class="total-value">{{
                               format(totals().get(member.employeeId) ?? 0)
                             }}</span>
@@ -149,30 +166,33 @@
                               >/ {{ format(current.capacityHours) }} h</span
                             ></span
                           >
-                          @if (isOver(current, member)) {
-                            <span class="over-label"
-                              >Over capacity by
-                              {{
-                                format(
-                                  (totals().get(member.employeeId) ?? 0) - current.capacityHours
-                                )
-                              }}
-                              h</span
-                            >
-                          } @else if (member.otherHours) {
-                            <span class="other"
-                              >incl. {{ format(member.otherHours) }} h elsewhere</span
-                            >
+                          <span class="track-label">Logged</span>
+                          @if (teamLoggedRails().get(member.employeeId); as rail) {
+                            <ng-container
+                              *ngTemplateOutlet="railTemplate; context: { $implicit: rail }"
+                            />
                           }
-                        </span>
-                        <span class="logged total-logged">
-                          {{ format(loggedTotals().get(member.employeeId) ?? 0) }} h logged
-                          @if (member.otherLoggedHours) {
-                            <span class="other"
-                              >incl. {{ format(member.otherLoggedHours) }} h elsewhere</span
-                            >
-                          }
-                        </span>
+                          <span class="track-figure total-logged"
+                            ><span class="total-value">{{
+                              format(loggedTotals().get(member.employeeId) ?? 0)
+                            }}</span>
+                            <span class="capacity">h</span></span
+                          >
+                        </div>
+                        @if (isOver(current, member)) {
+                          <p class="track-note over-label">
+                            {{
+                              format((totals().get(member.employeeId) ?? 0) - current.capacityHours)
+                            }}
+                            h over capacity
+                          </p>
+                        } @else if (member.otherHours || member.otherLoggedHours) {
+                          <p class="track-note other">
+                            Includes other managers’ projects:
+                            {{ format(member.otherHours) }} h planned,
+                            {{ format(member.otherLoggedHours) }} h logged
+                          </p>
+                        }
                       </td>
                     </tr>
                     @if (error) {
@@ -221,31 +241,41 @@
       <p class="status" aria-live="polite">Loading hours…</p>
     } @else if (mine.value(); as current) {
       @if (current.projects.length) {
-        @if (mineRail(); as rail) {
-          <div class="mine-rail">
+        <div class="tracks tracks-large">
+          <span class="track-label">Planned</span>
+          @if (mineRail(); as rail) {
             <ng-container *ngTemplateOutlet="railTemplate; context: { $implicit: rail }" />
-            <p class="mine-summary" [class.over]="rail.isOver">
-              <span class="mine-total">{{ format(current.totalHours) }} h</span>
-              <span class="muted">of {{ format(current.capacityHours) }} h in {{ label() }}</span>
-              <span class="mine-logged">{{ format(current.totalLoggedHours) }} h logged</span>
-              @if (rail.isOver) {
-                <span class="mine-state over-label"
-                  >Over capacity by {{ format(current.totalHours - current.capacityHours) }} h</span
-                >
-              } @else {
-                <span class="mine-state"
-                  >{{ format(current.capacityHours - current.totalHours) }} h free</span
-                >
-              }
-            </p>
-          </div>
-        }
+          }
+          <span class="track-figure" [class.over]="current.totalHours > current.capacityHours"
+            ><span class="total-value mine-total">{{ format(current.totalHours) }}</span>
+            <span class="capacity">/ {{ format(current.capacityHours) }} h</span></span
+          >
+          <span class="track-label">Logged</span>
+          @if (mineLoggedRail(); as rail) {
+            <ng-container *ngTemplateOutlet="railTemplate; context: { $implicit: rail }" />
+          }
+          <span class="track-figure"
+            ><span class="total-value mine-logged"
+              >{{ format(current.totalLoggedHours) }} h</span
+            ></span
+          >
+        </div>
+        <p class="track-note">
+          @if (current.totalHours > current.capacityHours) {
+            <span class="over-label"
+              >{{ format(current.totalHours - current.capacityHours) }} h over capacity in
+              {{ label() }}</span
+            >
+          } @else {
+            {{ format(current.capacityHours - current.totalHours) }} h free in {{ label() }}.
+          }
+        </p>
         <table class="mine">
           <thead>
             <tr>
               <th scope="col">Project</th>
-              <th scope="col">Run by</th>
-              <th scope="col" class="hours">Allocated</th>
+              <th scope="col" class="owner">Run by</th>
+              <th scope="col" class="hours">Planned</th>
               <th scope="col" class="hours">Logged</th>
             </tr>
           </thead>
@@ -255,14 +285,15 @@
                 <td>
                   <span class="chip" aria-hidden="true"></span
                   ><span class="project-name">{{ project.projectName }}</span>
+                  <span class="owner-inline muted">Run by {{ project.ownerName }}</span>
                 </td>
-                <td class="muted">{{ project.ownerName }}</td>
+                <td class="owner muted">{{ project.ownerName }}</td>
                 <td class="hours">{{ format(project.hours) }}</td>
                 <td
                   class="hours logged-hours"
                   [class.ahead]="project.loggedHours > project.hours"
                   [title]="
-                    project.loggedHours > project.hours ? 'More than allocated this month' : ''
+                    project.loggedHours > project.hours ? 'More than planned this month' : ''
                   "
                 >
                   {{ format(project.loggedHours) }}
@@ -272,7 +303,8 @@
           </tbody>
           <tfoot>
             <tr [class.over]="current.totalHours > current.capacityHours">
-              <th scope="row" colspan="2">Total</th>
+              <th scope="row">Total</th>
+              <td class="owner"></td>
               <td class="hours">
                 {{ format(current.totalHours) }}
                 <span class="capacity">/ {{ format(current.capacityHours) }} h</span>

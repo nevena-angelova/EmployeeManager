@@ -1,7 +1,5 @@
 .page {
-  max-width: 1120px;
-  margin: 0 auto;
-  padding: clamp(32px, 5vw, 56px) clamp(16px, 5vw, 64px);
+  padding: clamp(32px, 5vw, 56px) var(--page-gutter);
 }
 
 .page-intro {
@@ -99,6 +97,7 @@ td {
 }
 
 thead th {
+  vertical-align: bottom;
   color: var(--color-muted);
   font-size: 0.8125rem;
   font-weight: 700;
@@ -134,9 +133,28 @@ thead th {
     font-weight: 400;
   }
 
+  // A sticky cell paints over the collapsed border, so draw its rule itself.
+  tbody tr:not(.has-error) .person {
+    box-shadow: inset 0 -1px 0 var(--color-rule);
+  }
+
+  // Fixed width, so a project's name never changes how big its hours look.
+  .project,
+  .hours {
+    width: 12.5em;
+    min-width: 12.5em;
+  }
+
   .project {
-    min-width: 7.5em;
     color: var(--color-ink);
+    white-space: normal;
+    vertical-align: bottom;
+  }
+
+  // Rows grow with the tracks, so keep the names and figures on the same line as the planned track.
+  tbody .hours,
+  tbody .person {
+    vertical-align: top;
   }
 
   tr.has-error td,
@@ -145,19 +163,46 @@ thead th {
   }
 }
 
-// A project's colour key, in its column header and on My hours.
+// A project's colour key, in its column header and on My hours: a short piece of its track.
 .chip {
   display: inline-block;
-  width: 10px;
-  height: 10px;
-  margin: 0 8px 1px 0;
-  border-radius: 3px;
+  width: 18px;
+  height: 5px;
+  margin: 0 8px 3px 0;
+  border-radius: 999px;
   background: var(--project);
   vertical-align: middle;
 }
 
+.project-title {
+  font-weight: 700;
+}
+
 .hours {
   text-align: right;
+}
+
+// Planned and logged hours side by side, as plain figures in columns of the same width.
+.pair {
+  display: flex;
+  gap: 8px;
+
+  > * {
+    flex: none;
+    width: 5.5em;
+  }
+}
+
+.pair-caption {
+  margin-top: 8px;
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  font-weight: 400;
+
+  > * {
+    padding-right: 10px;
+    text-align: right;
+  }
 }
 
 .person-cell {
@@ -191,36 +236,40 @@ thead th {
   font-size: 0.875rem;
 }
 
-// An allocation block: the project's tint with a strong left edge, like a booking on a schedule.
+// An hours figure: plain text. Editable ones get an underline, like a field on a form.
 .block {
   display: flex;
   align-items: baseline;
-  border-left: 4px solid var(--project);
-  border-radius: 4px 8px 8px 4px;
-  background: var(--project-tint);
-  transition: box-shadow 120ms ease;
+  border-bottom: 1.5px solid transparent;
+  transition: border-color 120ms ease;
 
-  &:focus-within {
-    box-shadow: 0 0 0 2px var(--project);
+  &:has(input:enabled) {
+    border-bottom-color: var(--color-rule);
   }
 
-  // Hours left over from a member who has moved on: an outline only, to be cleared.
-  &.former {
-    border-left-style: dashed;
-    background: repeating-linear-gradient(
-      -45deg,
-      var(--project-tint) 0 6px,
-      var(--color-surface) 6px 10px
-    );
+  &:has(input:enabled:hover),
+  &:focus-within {
+    border-bottom-color: var(--color-ink);
+  }
+
+  // Hours left over from a member who has moved on, to be cleared.
+  &.former input {
+    color: var(--color-muted);
   }
 
   &:has(input[aria-invalid='true']) {
-    box-shadow: 0 0 0 2px var(--color-danger);
+    border-bottom-color: var(--color-danger);
   }
 
-  &:has(input:disabled) {
-    background: transparent;
+  &.logged {
+    justify-content: flex-end;
   }
+}
+
+.value {
+  padding: 9px 4px 7px 8px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
 .unit {
@@ -249,7 +298,7 @@ input {
     appearance: none;
   }
 
-  // The block's ring shows focus.
+  // The block's underline shows focus.
   &:focus-visible {
     outline: 0;
   }
@@ -257,16 +306,15 @@ input {
   &:disabled {
     color: var(--color-ink);
     opacity: 1;
+    cursor: default;
   }
 }
 
-// Where the report isn't on the project: an empty slot.
+// Where the report isn't on the project.
 .slot {
   display: block;
-  padding: 7px 10px 5px;
-  border: 1.5px dashed var(--color-rule);
-  border-radius: 8px;
-  text-align: center;
+  padding: 9px 10px 7px;
+  text-align: right;
 }
 
 .none {
@@ -274,27 +322,75 @@ input {
 }
 
 .total {
-  width: 240px;
-  min-width: 200px;
+  width: 320px;
+  min-width: 280px;
   text-align: left;
   cursor: help;
 }
 
-.total-line {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 6px;
+// Planned over logged, like scheduled and actual times on a timetable: one row per track, on the same
+// scale so the two lengths compare directly, with the figures lined up on the right.
+.tracks {
+  display: grid;
+  grid-template-columns: auto minmax(96px, 1fr) 6.5em;
+  align-items: center;
+  gap: 6px 10px;
+  padding-top: 6px;
+
+  .rail {
+    height: 10px;
+  }
+}
+
+.tracks-large {
+  grid-template-columns: auto minmax(120px, 1fr) 9em;
+  gap: 12px 16px;
+  padding: 24px 0 4px;
+  border-top: 2px solid var(--color-ink);
+
+  .rail {
+    height: 20px;
+  }
+
+  .track-label {
+    font-size: 0.875rem;
+  }
+
+  .total-value {
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+}
+
+.track-label {
+  color: var(--color-muted);
+  font-size: 0.75rem;
+}
+
+.track-figure {
   white-space: nowrap;
+  text-align: right;
+
+  .capacity {
+    margin-left: 0.3em;
+  }
+}
+
+.track-note {
+  margin: 8px 0 0;
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  white-space: normal;
+
+  .tracks-large + & {
+    margin-bottom: 20px;
+    font-size: 0.875rem;
+  }
 }
 
 .total-value {
   font-weight: 700;
-}
-
-.total-figure .capacity {
-  margin-left: 0.25em;
 }
 
 .capacity {
@@ -304,7 +400,6 @@ input {
 
 .other {
   color: var(--color-muted);
-  font-size: 0.75rem;
 }
 
 .over {
@@ -315,23 +410,17 @@ input {
   }
 }
 
-// The month's sum of daily time entries, under the planned hours.
-.logged {
-  display: block;
-  margin-top: 4px;
-  color: var(--color-muted);
-  font-size: 0.75rem;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
+// Logged hours aren't held to capacity, so they stay ink when the plan goes over.
+.total-logged {
+  color: var(--color-ink);
 
-.total-logged .other {
-  margin-left: 0.5em;
+  .capacity {
+    color: var(--color-muted);
+  }
 }
 
 .over-label {
   color: var(--color-danger);
-  font-size: 0.75rem;
   font-weight: 700;
 }
 
@@ -420,46 +509,6 @@ input {
   font-size: 0.875rem;
 }
 
-// Your month at a glance, above the breakdown.
-.mine-rail {
-  margin-bottom: 24px;
-  padding: 20px 0 0;
-  border-top: 2px solid var(--color-ink);
-
-  .rail {
-    height: 28px;
-  }
-}
-
-.mine-summary {
-  display: flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 4px 10px;
-  margin: 12px 0 0;
-  font-variant-numeric: tabular-nums;
-}
-
-.mine-total {
-  font-size: 1.75rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-}
-
-.mine-logged {
-  color: var(--color-muted);
-  font-weight: 600;
-}
-
-.mine-state {
-  margin-left: auto;
-  font-weight: 600;
-
-  &.over-label {
-    font-size: 1rem;
-  }
-}
-
 .mine {
   th:first-child,
   td:first-child {
@@ -475,16 +524,17 @@ input {
     font-weight: 700;
   }
 
+  // On phones the owner moves under the project name, to leave room for both figures.
+  .owner-inline {
+    display: none;
+  }
+
   .hours {
     white-space: nowrap;
   }
 
   tbody .hours {
     font-weight: 700;
-  }
-
-  .logged-hours {
-    color: var(--color-muted);
   }
 
   // Logged more than was planned: not an error, but worth a look.
@@ -570,7 +620,22 @@ button {
     min-width: 150px;
   }
 
-  .mine-total {
-    font-size: 1.5rem;
+  .mine {
+    .owner {
+      display: none;
+    }
+
+    .owner-inline {
+      display: block;
+    }
+  }
+
+  .tracks-large {
+    grid-template-columns: auto minmax(80px, 1fr) auto;
+    gap: 10px 12px;
+
+    .total-value {
+      font-size: 1.25rem;
+    }
   }
 }
