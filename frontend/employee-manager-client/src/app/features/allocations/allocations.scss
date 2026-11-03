@@ -1,7 +1,5 @@
 .page {
-  max-width: 1120px;
-  margin: 0 auto;
-  padding: clamp(32px, 5vw, 56px) clamp(16px, 5vw, 64px);
+  padding: clamp(32px, 5vw, 56px) var(--page-gutter);
 }
 
 .page-intro {

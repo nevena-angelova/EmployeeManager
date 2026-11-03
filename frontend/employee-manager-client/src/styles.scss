@@ -33,6 +33,9 @@
   --project-5-tint: #e6efd8;
 
   --shadow-dialog: 0 18px 48px rgb(31 39 51 / 22%);
+
+  // Left and right margin of the header and every page, which otherwise span the full window width.
+  --page-gutter: clamp(16px, 2vw, 32px);
 }
 
 *,
