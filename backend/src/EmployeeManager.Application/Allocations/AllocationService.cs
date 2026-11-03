@@ -181,6 +181,53 @@ public class AllocationService(IApplicationDbContext db, TimeProvider timeProvid
         return EmployeeResult<TeamAllocationsDto>.Success(await GetTeamAsync(month, managerId, cancellationToken));
     }
 
+    public async Task<TeamStatisticsDto> GetTeamStatisticsAsync(
+        int year,
+        Guid managerId,
+        CancellationToken cancellationToken = default)
+    {
+        var start = new DateOnly(year, 1, 1);
+        var end = start.AddYears(1);
+
+        var projects = await db.Projects
+            .AsNoTracking()
+            .Where(p => p.OwnerId == managerId)
+            .OrderBy(p => p.Name)
+            .Select(p => new AllocationProjectDto(p.Id, p.Name))
+            .ToListAsync(cancellationToken);
+
+        var reports = await db.Employees
+            .AsNoTracking()
+            .Where(e => e.ManagerId == managerId)
+            .OrderBy(e => e.FirstName)
+            .ThenBy(e => e.LastName)
+            .Select(e => new StatisticsMember(e.Id, e.FirstName, e.LastName, e.JobTitle))
+            .ToListAsync(cancellationToken);
+
+        var planned = await db.HourAllocations
+            .AsNoTracking()
+            .Where(a => a.Month >= start && a.Month < end && a.Employee!.ManagerId == managerId)
+            .Select(a => new StatisticsHours(a.EmployeeId, a.ProjectId, a.Month, a.Hours, a.Project!.OwnerId == managerId))
+            .ToListAsync(cancellationToken);
+
+        var logged = (await db.TimeEntries
+                .AsNoTracking()
+                .Where(e => e.Date >= start && e.Date < end && e.Employee!.ManagerId == managerId)
+                .GroupBy(e => new
+                {
+                    e.EmployeeId,
+                    e.ProjectId,
+                    IsOwn = e.Project!.OwnerId == managerId,
+                    e.Date.Month,
+                })
+                .Select(g => new { g.Key.EmployeeId, g.Key.ProjectId, g.Key.IsOwn, g.Key.Month, Hours = g.Sum(e => e.Hours) })
+                .ToListAsync(cancellationToken))
+            .Select(g => new StatisticsHours(g.EmployeeId, g.ProjectId, new DateOnly(year, g.Month, 1), g.Hours, g.IsOwn))
+            .ToList();
+
+        return AllocationStatisticsBuilder.Build(year, projects, reports, planned, logged);
+    }
+
     public async Task<MyAllocationsDto> GetMineAsync(
         DateOnly month,
         Guid employeeId,

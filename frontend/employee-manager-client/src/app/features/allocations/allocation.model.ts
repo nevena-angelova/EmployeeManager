@@ -72,3 +72,56 @@ export interface MyAllocations {
   totalHours: number;
   totalLoggedHours: number;
 }
+
+/** Planned (allocated) and logged hours in one month. */
+export interface MonthHours {
+  /** `yyyy-MM`. */
+  month: string;
+  planned: number;
+  logged: number;
+}
+
+/** The team's totals on the manager's projects in one month. */
+export interface MonthStatistics extends MonthHours {
+  /** The hours each employee has available in the month (8 per weekday). */
+  capacityHours: number;
+  /** The reports' allocated hours on other managers' projects. */
+  otherPlanned: number;
+  /** The reports' logged hours on other managers' projects. */
+  otherLogged: number;
+}
+
+/** One of the manager's projects over the year. */
+export interface ProjectStatistics {
+  id: string;
+  name: string;
+  /** January to December. */
+  months: MonthHours[];
+  totalPlanned: number;
+  totalLogged: number;
+}
+
+/** A direct report's hours on the manager's projects over the year. */
+export interface MemberStatistics {
+  employeeId: string;
+  firstName: string;
+  lastName: string;
+  jobTitle: string;
+  /** January to December. */
+  months: MonthHours[];
+  totalPlanned: number;
+  totalLogged: number;
+}
+
+/** A year of a manager's direct reports' planned and logged hours on the manager's projects. */
+export interface TeamStatistics {
+  year: number;
+  /** January to December. */
+  months: MonthStatistics[];
+  /** The manager's projects, sorted by name. */
+  projects: ProjectStatistics[];
+  /** The manager's direct reports, sorted by name. */
+  members: MemberStatistics[];
+  totalPlanned: number;
+  totalLogged: number;
+}

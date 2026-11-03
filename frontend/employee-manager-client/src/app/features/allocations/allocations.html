@@ -12,15 +12,25 @@
         }
       </p>
     </div>
-    <nav class="month-nav" aria-label="Month">
-      <button type="button" class="step" (click)="previous()" aria-label="Previous month">
-        <span aria-hidden="true">‹</span>
-      </button>
-      <span class="month-label" aria-live="polite">{{ label() }}</span>
-      <button type="button" class="step" (click)="next()" aria-label="Next month">
-        <span aria-hidden="true">›</span>
-      </button>
-    </nav>
+    <div class="intro-actions">
+      @if (isManager()) {
+        <a
+          class="button-link"
+          routerLink="/allocations/statistics"
+          [queryParams]="{ year: selectedMonth().slice(0, 4) }"
+          >Statistics</a
+        >
+      }
+      <nav class="month-nav" aria-label="Month">
+        <button type="button" class="step" (click)="previous()" aria-label="Previous month">
+          <span aria-hidden="true">‹</span>
+        </button>
+        <span class="month-label" aria-live="polite">{{ label() }}</span>
+        <button type="button" class="step" (click)="next()" aria-label="Next month">
+          <span aria-hidden="true">›</span>
+        </button>
+      </nav>
+    </div>
   </div>
 
   @if (isManager()) {

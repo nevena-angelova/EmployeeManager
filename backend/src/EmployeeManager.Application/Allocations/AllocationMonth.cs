@@ -11,6 +11,12 @@ public static class AllocationMonth
     public static bool TryParse(string? value, out DateOnly month) =>
         DateOnly.TryParseExact(value, "yyyy-MM", CultureInfo.InvariantCulture, DateTimeStyles.None, out month);
 
+    /// <summary>Parses a four-digit year, e.g. <c>2026</c>. The last year <see cref="DateOnly"/> can hold is refused.</summary>
+    public static bool TryParseYear(string? value, out int year) =>
+        int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out year)
+        && value!.Length == 4
+        && year is >= 1 and < 9999;
+
     public static string Format(DateOnly month) => month.ToString("yyyy-MM", CultureInfo.InvariantCulture);
 
     /// <summary>The month <paramref name="date"/> falls in.</summary>

@@ -21,6 +21,25 @@ public class AllocationMonthTests
     public void TryParse_WithAnythingElse_Fails(string? value) => Assert.False(AllocationMonth.TryParse(value, out _));
 
     [Fact]
+    public void TryParseYear_WithFourDigits_ReturnsTheYear()
+    {
+        Assert.True(AllocationMonth.TryParseYear("2026", out var year));
+        Assert.Equal(2026, year);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("26")]
+    [InlineData("02026")]
+    [InlineData("+202")]
+    [InlineData("0000")]
+    [InlineData("9999")]
+    [InlineData("2026-11")]
+    public void TryParseYear_WithAnythingElse_Fails(string? value) =>
+        Assert.False(AllocationMonth.TryParseYear(value, out _));
+
+    [Fact]
     public void Format_ReturnsYearAndMonth() => Assert.Equal("2026-03", AllocationMonth.Format(new DateOnly(2026, 3, 1)));
 
     [Theory]

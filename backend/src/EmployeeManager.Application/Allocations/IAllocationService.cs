@@ -21,6 +21,12 @@ public interface IAllocationService
         Guid managerId,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// The year's planned and logged hours of the manager's direct reports on the manager's projects, by month,
+    /// project and report.
+    /// </summary>
+    Task<TeamStatisticsDto> GetTeamStatisticsAsync(int year, Guid managerId, CancellationToken cancellationToken = default);
+
     /// <summary>The employee's hours in the month on every project they're on or have hours on.</summary>
     Task<MyAllocationsDto> GetMineAsync(DateOnly month, Guid employeeId, CancellationToken cancellationToken = default);
 }

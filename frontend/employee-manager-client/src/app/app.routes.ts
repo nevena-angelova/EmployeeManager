@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 
 import { adminGuard } from './core/auth/admin.guard';
 import { authGuard } from './core/auth/auth.guard';
+import { managerGuard } from './core/auth/manager.guard';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'org-chart' },
@@ -49,5 +50,12 @@ export const routes: Routes = [
     title: 'Hours',
     canActivate: [authGuard],
     loadComponent: () => import('./features/allocations/allocations').then((m) => m.Allocations),
+  },
+  {
+    path: 'allocations/statistics',
+    title: 'Hours statistics',
+    canActivate: [authGuard, managerGuard],
+    loadComponent: () =>
+      import('./features/allocations/statistics/statistics').then((m) => m.Statistics),
   },
 ];

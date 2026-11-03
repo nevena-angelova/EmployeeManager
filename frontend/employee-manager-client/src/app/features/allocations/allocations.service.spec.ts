@@ -43,4 +43,14 @@ describe('AllocationsService', () => {
     expect(save.request.urlWithParams).toBe(`${environment.apiUrl}/allocations/team?month=2026-11`);
     expect(save.request.body).toEqual(body);
   });
+
+  it('gets the team statistics for a year', () => {
+    service.getTeamStatistics('2026').subscribe();
+
+    const statistics = http.expectOne(
+      (r) => r.url === `${environment.apiUrl}/allocations/team/statistics`,
+    );
+    expect(statistics.request.method).toBe('GET');
+    expect(statistics.request.params.get('year')).toBe('2026');
+  });
 });
