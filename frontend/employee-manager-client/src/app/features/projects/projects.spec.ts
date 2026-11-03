@@ -51,8 +51,11 @@ const day: DayTimeEntries = {
 describe('Projects', () => {
   let service: { listManaged: ReturnType<typeof vi.fn>; listMine: ReturnType<typeof vi.fn> };
 
-  async function render(user: CurrentUser): Promise<HTMLElement> {
-    service = { listManaged: vi.fn(() => of([payments])), listMine: vi.fn(() => of([planning])) };
+  async function render(
+    user: CurrentUser,
+    mine: ProjectSummary[] = [planning],
+  ): Promise<HTMLElement> {
+    service = { listManaged: vi.fn(() => of([payments])), listMine: vi.fn(() => of(mine)) };
     TestBed.configureTestingModule({
       imports: [Projects],
       providers: [
@@ -91,11 +94,20 @@ describe('Projects', () => {
     expect(element.querySelector('button.primary')?.textContent?.trim()).toBe('New project');
   });
 
-  it('shows everyone their daily hours first', async () => {
+  it('shows daily hours first to someone on a project', async () => {
     const element = await render({ ...lucas, role: 'Employee' });
 
     expect(element.querySelector('section app-daily-hours h3')?.textContent?.trim()).toBe(
       'Daily hours',
+    );
+  });
+
+  it('hides daily hours from someone who is on no projects', async () => {
+    const element = await render({ ...lucas, role: 'Employee' }, []);
+
+    expect(element.querySelector('app-daily-hours')).toBeNull();
+    expect(element.querySelector('#mine-title + .status')?.textContent?.trim()).toBe(
+      'You aren’t on any projects yet.',
     );
   });
 
