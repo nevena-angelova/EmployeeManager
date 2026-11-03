@@ -19,9 +19,11 @@
     }
   </div>
 
-  <section aria-labelledby="daily-hours-title">
-    <app-daily-hours [date]="date()" />
-  </section>
+  @if (hasProjects()) {
+    <section aria-labelledby="daily-hours-title">
+      <app-daily-hours [date]="date()" />
+    </section>
+  }
 
   @if (isManager()) {
     <section aria-labelledby="managed-title">

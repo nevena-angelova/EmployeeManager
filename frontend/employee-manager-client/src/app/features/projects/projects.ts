@@ -20,7 +20,7 @@ import { ProjectForm } from './project-form/project-form';
 import { ProjectsService } from './projects.service';
 
 /**
- * Where everyone logs their daily hours on their projects, followed by the projects they're on and, for managers,
+ * Where everyone on a project logs their daily hours on it, followed by the projects they're on and, for managers,
  * the ones they run, with a New project dialog.
  */
 @Component({
@@ -45,6 +45,8 @@ export class Projects {
     stream: () => this.projectsService.listManaged(),
   });
   protected readonly mine = rxResource({ stream: () => this.projectsService.listMine() });
+  /** Daily hours is only shown to people who are on at least one project. */
+  protected readonly hasProjects = computed(() => (this.mine.value()?.length ?? 0) > 0);
   /** The manager's direct reports, offered as members in the New project dialog. */
   protected readonly directReports = rxResource({
     params: () => (this.isManager() ? this.user()?.employeeId : undefined),
