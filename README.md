@@ -8,14 +8,6 @@ capacity and compare planned with logged time. Admins manage employees and their
 **Front end:** Angular 22 (standalone, zoneless, signals).
 **Quality:** unit, integration and front-end tests run in GitHub Actions CI.
 
-<!--
-## Screenshots
-
-| Org chart | Team hours | Statistics |
-|-----------|------------|------------|
-| ![Org chart](docs/screenshots/org-chart.png) | ![Team hours](docs/screenshots/team-hours.png) | ![Statistics](docs/screenshots/statistics.png) |
--->
-
 ## Features
 
 **Everyone**
@@ -36,6 +28,18 @@ capacity and compare planned with logged time. Admins manage employees and their
 **Admins**
 - **Employee management:** add, edit and delete employees together with their sign-in accounts and roles,
   and view each employee's profile with their manager and direct reports.
+
+## Screenshots
+
+**Org chart:** each team has its own line colour.
+
+![Org chart](docs/screenshots/org-chart.png)
+
+| Team hours (Manager) | Statistics (Manager) |
+|----------------------|----------------------|
+| ![Team hours grid with planned and logged hours against capacity](docs/screenshots/team-hours.png) | ![Yearly planned vs. logged hours chart](docs/screenshots/statistics.png) |
+| **Daily hours (Employee)** | **Employees (Admin)** |
+| ![Daily hours with the week strip](docs/screenshots/daily-hours.png) | ![Employees table](docs/screenshots/employees.png) |
 
 ## Tech stack
 
